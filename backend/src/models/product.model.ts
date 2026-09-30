@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
+import { deleteUploadedFile } from '../utils/upload';
 
 export interface IProductVariant {
   _id?: mongoose.Types.ObjectId;
@@ -15,17 +16,17 @@ export interface IProduct extends Document {
   slug: string;
   description: string;
   shortDescription: string;
-  category: mongoose.Types.ObjectId;
-  subcategory?: string;
+  categories: mongoose.Types.ObjectId[];
   tags: string[];
   images: string[];
   altText: string;
+  metaTitle: string;
+  metaDescription: string;
   thumbnail: string;
   price: number;
   compareAtPrice?: number;
   costPrice: number;
   sku: string;
-  barcode?: string;
   variants: IProductVariant[];
   sizes: string[];
   colors: string[];
@@ -33,15 +34,10 @@ export interface IProduct extends Document {
   averageRating: number;
   numReviews: number;
   isActive: boolean;
+  isDeleted: boolean;
+  deletedAt?: Date;
   isFeatured: boolean;
-  weight?: number;
-  dimensions?: {
-    length: number;
-    width: number;
-    height: number;
-  };
-  seoTitle?: string;
-  seoDescription?: string;
+  isNewArrival: boolean;
   discountPercentage: number;
   createdAt: Date;
   updatedAt: Date;
@@ -69,7 +65,6 @@ const productSchema = new Schema<IProduct>(
     },
     slug: {
       type: String,
-      unique: true,
       trim: true,
       lowercase: true,
     },
@@ -80,18 +75,18 @@ const productSchema = new Schema<IProduct>(
     },
     shortDescription: {
       type: String,
-      maxlength: [500, 'Short description cannot exceed 500 characters'],
       default: '',
     },
-    category: {
+    categories: [{
       type: Schema.Types.ObjectId,
       ref: 'Category',
-      required: [true, 'Category is required'],
-    },
-    subcategory: { type: String, trim: true, default: '' },
+      required: true,
+    }],
     tags: [{ type: String, trim: true }],
     images: [{ type: String }],
     altText: { type: String, default: '', trim: true },
+    metaTitle: { type: String, default: '', trim: true, maxlength: 60 },
+    metaDescription: { type: String, default: '', trim: true, maxlength: 160 },
     thumbnail: { type: String, default: '' },
     price: {
       type: Number,
@@ -110,25 +105,18 @@ const productSchema = new Schema<IProduct>(
     sku: {
       type: String,
       required: [true, 'SKU is required'],
-      unique: true,
       trim: true,
     },
-    barcode: { type: String, trim: true, default: '' },
     variants: [productVariantSchema],
     sizes: [{ type: String }],
     colors: [{ type: String }],
     averageRating: { type: Number, default: 0, min: 0, max: 5 },
     numReviews: { type: Number, default: 0, min: 0 },
     isActive: { type: Boolean, default: true },
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date },
     isFeatured: { type: Boolean, default: false },
-    weight: { type: Number, min: 0 },
-    dimensions: {
-      length: { type: Number, min: 0 },
-      width: { type: Number, min: 0 },
-      height: { type: Number, min: 0 },
-    },
-    seoTitle: { type: String, maxlength: [70, 'SEO title cannot exceed 70 characters'] },
-    seoDescription: { type: String, maxlength: [160, 'SEO description cannot exceed 160 characters'] },
+    isNewArrival: { type: Boolean, default: false },
   },
   {
     timestamps: true,
@@ -138,12 +126,30 @@ const productSchema = new Schema<IProduct>(
 );
 
 productSchema.index({ name: 'text', description: 'text', tags: 'text' });
-productSchema.index({ category: 1 });
+productSchema.index({ categories: 1 });
 productSchema.index({ price: 1 });
-productSchema.index({ isActive: 1 });
+productSchema.index({ isDeleted: 1, isActive: 1 });
 productSchema.index({ isFeatured: 1 });
+productSchema.index({ isNewArrival: 1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ 'variants.sku': 1 });
+productSchema.index({ isDeleted: 1, isActive: 1, categories: 1 });
+productSchema.index({ isDeleted: 1, isActive: 1, isFeatured: 1 });
+productSchema.index({ isDeleted: 1, isActive: 1, isNewArrival: 1 });
+productSchema.index({ isDeleted: 1, isActive: 1, averageRating: -1 });
+
+// Slug + SKU stay unique — but only among products that still exist. Without
+// the partial filter a soft-deleted product would keep its slug/SKU reserved
+// forever, so re-creating a product with the same name would fail with a
+// duplicate-key error. Synced in config/db.ts via syncIndexes().
+productSchema.index(
+  { slug: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: false } }
+);
+productSchema.index(
+  { sku: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: false } }
+);
 
 productSchema.virtual('stock').get(function () {
   if (this.variants && this.variants.length > 0) {
@@ -167,6 +173,25 @@ productSchema.pre('save', function (next) {
       .replace(/(^-|-$)/g, '') + '-' + Date.now().toString(36);
   }
   next();
+});
+
+// PERMANENT-delete file cleanup: when a product is actually removed from the
+// DB (findOneAndDelete / deleteOne — NOT the soft delete), its uploaded image
+// files are deleted from the uploads folder automatically.
+const deleteProductImageFiles = (doc: { images?: string[] } | null) => {
+  (doc?.images || []).forEach((img) => deleteUploadedFile(img));
+};
+
+productSchema.post('findOneAndDelete', function (doc) {
+  deleteProductImageFiles(doc);
+});
+
+productSchema.pre('deleteOne', { document: false, query: true }, async function () {
+  (this as any).__deletedDoc = await this.model.findOne(this.getFilter()).lean();
+});
+
+productSchema.post('deleteOne', { document: false, query: true }, function () {
+  deleteProductImageFiles((this as any).__deletedDoc);
 });
 
 export const Product: Model<IProduct> = mongoose.model<IProduct>('Product', productSchema);

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import Image from "next/image";
+import { isRichText, sanitizeRichText } from "@/lib/rich-text";
 
 export default function AdminCategoryDetailPage() {
   const params = useParams();
@@ -37,7 +38,7 @@ export default function AdminCategoryDetailPage() {
     queryKey: ["admin-category-products", params.id],
     queryFn: () =>
       api
-        .get(`/products?category=${params.id}&limit=100`)
+        .get(`/products?categories=${params.id}&limit=100`)
         .then((res) => res.data.data?.data ?? []),
     enabled: !!params.id,
   });
@@ -159,9 +160,16 @@ export default function AdminCategoryDetailPage() {
           {/* Description */}
           <div className="border rounded-xl p-6 bg-card">
             <h2 className="font-semibold mb-4">Description</h2>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {category.description || "No description provided."}
-            </p>
+            {isRichText(category.description) ? (
+              <div
+                className="text-sm text-muted-foreground [&_a]:underline [&_li]:my-0.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5"
+                dangerouslySetInnerHTML={{ __html: sanitizeRichText(category.description) }}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {category.description || "No description provided."}
+              </p>
+            )}
           </div>
 
           {/* Products in this Category */}

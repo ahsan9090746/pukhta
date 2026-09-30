@@ -4,8 +4,11 @@ import { Cart } from '../models/cart.model';
 import { Coupon } from '../models/coupon.model';
 import { Notification } from '../models/notification.model';
 import { NotFoundError, BadRequestError } from '../utils/AppError';
+import { logger } from '../utils/logger';
+import { sendOrderWhatsApp } from './whatsapp.service';
 import { parsePagination, parseSort, buildPaginationResponse } from '../utils/pagination';
-import { generateOrderNumber } from '../utils/helpers';
+import { generateOrderNumber, getPhoneVariants, normalizePhone, maskPhone } from '../utils/helpers';
+import { NOT_DELETED } from '../utils/softDelete';
 
 export interface CreateOrderData {
   userId: string;
@@ -26,14 +29,23 @@ export interface CreateOrderData {
 }
 
 export class OrderService {
+  /**
+   * Shipping is permanently free on every order — no threshold, no flat fee,
+   * regardless of store settings. Kept as one helper so guest and account
+   * orders always charge the same amount the storefront displays (always 0).
+   */
+  private static async resolveShipping(_subtotal: number): Promise<number> {
+    return 0;
+  }
+
   static async create(data: CreateOrderData): Promise<IOrder> {
     const orderItems: IOrderItem[] = [];
     let subtotal = 0;
 
     for (const item of data.items) {
-      const product = await Product.findById(item.product);
+      const product = await Product.findOne({ _id: item.product, ...NOT_DELETED });
       if (!product) {
-        throw new NotFoundError(`Product ${item.product}`);
+        throw new BadRequestError('One or more products in this order are no longer available');
       }
 
       if (!product.isActive) {
@@ -96,6 +108,7 @@ export class OrderService {
       const coupon = await Coupon.findOne({
         code: data.couponCode.toUpperCase(),
         isActive: true,
+        ...NOT_DELETED,
       });
 
       if (!coupon) {
@@ -128,14 +141,16 @@ export class OrderService {
       couponId = coupon._id.toString();
     }
 
-    const shipping = 0; // Shipping is completely free
+    const shipping = await OrderService.resolveShipping(subtotal);
     const total = Math.max(0, Math.round((subtotal - discount + shipping) * 100) / 100);
 
     const order = await Order.create({
       user: data.userId,
-      orderNumber: generateOrderNumber(),
+      orderNumber: await generateOrderNumber(),
       items: orderItems,
-      shippingAddress: data.shippingAddress,
+      // Store the phone in normalized form so order tracking matches
+      // regardless of how the number is formatted later.
+      shippingAddress: { ...data.shippingAddress, phone: normalizePhone(data.shippingAddress.phone) },
       paymentMethod: data.paymentMethod,
       paymentStatus: 'pending',
       orderStatus: 'pending',
@@ -194,6 +209,11 @@ export class OrderService {
       data: { orderId: order._id, orderNumber: order.orderNumber },
     });
 
+    // Fire-and-forget owner WhatsApp alert — must never fail/delay the order.
+    void sendOrderWhatsApp(order).catch((err: Error) => {
+      logger.error(`WhatsApp alert error for order #${order.orderNumber}: ${err.message}`);
+    });
+
     return order;
   }
 
@@ -225,9 +245,9 @@ export class OrderService {
     let subtotal = 0;
 
     for (const item of data.items) {
-      const product = await Product.findById(item.product);
+      const product = await Product.findOne({ _id: item.product, ...NOT_DELETED });
       if (!product) {
-        throw new NotFoundError(`Product ${item.product}`);
+        throw new BadRequestError('One or more products in this order are no longer available');
       }
       if (!product.isActive) {
         throw new BadRequestError(`Product "${product.name}" is no longer available`);
@@ -280,16 +300,19 @@ export class OrderService {
       subtotal += product.price * quantity;
     }
 
-    const shipping = 0; // Shipping is completely free
+    const shipping = await OrderService.resolveShipping(subtotal);
     const total = Math.max(0, Math.round((subtotal + shipping) * 100) / 100);
 
     const order = await Order.create({
       user: null,
       isGuest: true,
       guestEmail: data.guestEmail,
-      orderNumber: generateOrderNumber(),
+      orderNumber: await generateOrderNumber(),
       items: orderItems,
-      shippingAddress: data.shippingAddress,
+      // Store the phone in normalized form so order tracking matches
+      // regardless of how the number is formatted later (spaces, dashes,
+      // +92 country-code prefix, etc.).
+      shippingAddress: { ...data.shippingAddress, phone: normalizePhone(data.shippingAddress.phone) },
       paymentMethod: data.paymentMethod,
       paymentStatus: 'pending',
       orderStatus: 'pending',
@@ -334,7 +357,90 @@ export class OrderService {
       }
     }
 
+    // Fire-and-forget owner WhatsApp alert — must never fail/delay the order.
+    void sendOrderWhatsApp(order).catch((err: Error) => {
+      logger.error(`WhatsApp alert error for order #${order.orderNumber}: ${err.message}`);
+    });
+
     return order;
+  }
+
+  /**
+   * Public order tracking — no authentication required.
+   * At least one of orderCode / phone must be provided (validated upstream too).
+   * - orderCode only -> the single matching guest order
+   * - phone only     -> all guest orders placed with that phone (masked contact)
+   * - both           -> guest orders matching both (most precise, unmasked)
+   * Only guest orders are exposed, matching the privacy rule of the
+   * existing /orders/guest endpoints.
+   */
+  static async trackOrders(data: { orderCode?: string; phone?: string }) {
+    const orderCode = (data.orderCode || '').trim();
+    const phone = (data.phone || '').trim();
+
+    if (!orderCode && !phone) {
+      throw new BadRequestError('Please enter either an Order Code or a Phone Number');
+    }
+
+    const filter: Record<string, any> = { isGuest: true };
+
+    if (orderCode) {
+      // Accept with or without the "ORD-" prefix, normalize to uppercase.
+      const normalized = orderCode.toUpperCase().replace(/\s+/g, '');
+      filter.orderNumber = normalized.startsWith('ORD-') ? normalized : `ORD-${normalized}`;
+    }
+
+    if (phone) {
+      // Match the number in the formats most commonly used at checkout.
+      const variants = getPhoneVariants(phone);
+      if (variants.length === 0) {
+        throw new BadRequestError('Please enter a valid phone number');
+      }
+      filter['shippingAddress.phone'] = { $in: variants };
+    }
+
+    const orders = await Order.find(filter).sort({ createdAt: -1 }).lean();
+
+    // Mask the phone when listing several orders for a phone-only search.
+    const maskContact = !orderCode;
+
+    return orders.map((order) => OrderService.formatTrackedOrder(order, maskContact));
+  }
+
+  /**
+   * Limits a tracked order to the fields that are safe to expose publicly.
+   */
+  private static formatTrackedOrder(order: any, maskContact: boolean) {
+    const address = order.shippingAddress || ({} as any);
+    return {
+      orderNumber: order.orderNumber,
+      orderStatus: order.orderStatus,
+      paymentStatus: order.paymentStatus,
+      paymentMethod: order.paymentMethod,
+      subtotal: order.subtotal,
+      discount: order.discount || 0,
+      shipping: order.shipping,
+      total: order.total,
+      // Shown to the customer once the admin assigns a courier + tracking id.
+      trackingNumber: order.trackingNumber || '',
+      shippingCarrier: order.shippingCarrier || '',
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      items: (order.items || []).map((item: any) => ({
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        image: item.image,
+      })),
+      shippingAddress: {
+        fullName: address.fullName || '',
+        phone: maskContact ? maskPhone(address.phone || '') : address.phone || '',
+        address: [address.address1, address.address2].filter(Boolean).join(', '),
+        city: address.city || '',
+        postalCode: address.postalCode || '',
+        country: address.country || '',
+      },
+    };
   }
 
   static async getAll(query: {

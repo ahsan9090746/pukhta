@@ -48,7 +48,7 @@ export default function OrdersPage() {
           description="Your order history will appear here once you make a purchase."
           action={
             <Button asChild>
-              <Link href="/products">Start Shopping</Link>
+              <Link href="/product-category">Start Shopping</Link>
             </Button>
           }
         />

@@ -22,8 +22,20 @@ export default function ReviewList({ reviews }: ReviewListProps) {
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
     : 0;
 
+  if (!reviews.length) {
+    return (
+      <div className="space-y-3">
+        <h3 className="text-lg font-bold tracking-tight">Reviews</h3>
+        <p className="text-sm text-muted-foreground">There are no reviews yet.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      <h3 className="text-lg font-bold tracking-tight">
+        Reviews ({reviews.length})
+      </h3>
       <div className="flex items-start gap-8">
         <div className="text-center">
           <div className="text-4xl font-bold">{averageRating.toFixed(1)}</div>
@@ -34,7 +46,7 @@ export default function ReviewList({ reviews }: ReviewListProps) {
                 className={cn(
                   "h-4 w-4",
                   star <= averageRating
-                    ? "fill-gold-500 text-gold-500"
+                    ? "fill-brand-gold text-brand-gold"
                     : "text-gray-300"
                 )}
               />
@@ -66,11 +78,23 @@ export default function ReviewList({ reviews }: ReviewListProps) {
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
-                  {review.user?.name?.charAt(0) || "U"}
-                </div>
+                {review.isFake ? (
+                  <>
+                    {review.fakeAvatar ? (
+                      <img src={review.fakeAvatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-sm font-medium">
+                        {(review.fakeName || "U").charAt(0)}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
+                    {review.user?.name?.charAt(0) || review.guestName?.charAt(0) || "U"}
+                  </div>
+                )}
                 <div>
-                  <p className="font-medium text-sm">{review.user?.name}</p>
+                  <p className="font-medium text-sm">{review.isFake ? (review.fakeName || "User") : (review.user?.name || review.guestName || "Customer")}</p>
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
@@ -78,7 +102,7 @@ export default function ReviewList({ reviews }: ReviewListProps) {
                         className={cn(
                           "h-3 w-3",
                           star <= review.rating
-                            ? "fill-gold-500 text-gold-500"
+                            ? "fill-brand-gold text-brand-gold"
                             : "text-gray-300"
                         )}
                       />

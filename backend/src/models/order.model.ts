@@ -28,10 +28,9 @@ export interface IOrder extends Document {
   orderNumber: string;
   items: IOrderItem[];
   shippingAddress: IShippingAddress;
-  billingAddress?: IShippingAddress;
   paymentMethod: string;
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
-  orderStatus: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  orderStatus: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'out_for_delivery' | 'delivered' | 'cancelled';
   subtotal: number;
   discount: number;
   shipping: number;
@@ -100,9 +99,6 @@ const orderSchema = new Schema<IOrder>(
       type: shippingAddressSchema,
       required: true,
     },
-    billingAddress: {
-      type: shippingAddressSchema,
-    },
     paymentMethod: {
       type: String,
       required: [true, 'Payment method is required'],
@@ -114,7 +110,7 @@ const orderSchema = new Schema<IOrder>(
     },
     orderStatus: {
       type: String,
-      enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'],
+      enum: ['pending', 'confirmed', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'],
       default: 'pending',
     },
     subtotal: {
@@ -152,15 +148,28 @@ orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ paymentStatus: 1 });
 orderSchema.index({ createdAt: -1 });
+orderSchema.index({ paymentStatus: 1, createdAt: -1 });
+orderSchema.index({ orderStatus: 1, createdAt: -1 });
 
-orderSchema.pre('save', function (next) {
+orderSchema.pre('save', async function (next) {
   if (!this.orderNumber) {
-    const date = new Date();
-    const year = date.getFullYear().toString().slice(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    this.orderNumber = `FW${year}${month}${day}${random}`;
+    const { Counter } = require('./counter.model');
+    const counter = await Counter.findOneAndUpdate(
+      { name: 'orderNumber' },
+      [{
+        $set: {
+          seq: {
+            $cond: {
+              if: { $lt: ['$seq', 9001] },
+              then: 9001,
+              else: { $add: ['$seq', 1] },
+            },
+          },
+        },
+      }],
+      { new: true, upsert: true }
+    );
+    this.orderNumber = `ORD-${counter.seq}`;
   }
   next();
 });

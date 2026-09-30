@@ -12,4 +12,7 @@ export { Address, IAddress } from './address.model';
 export { Notification, INotification } from './notification.model';
 export { InventoryMovement, IInventoryMovement } from './inventory-movement.model';
 export { ReturnRefund, IReturnRefund, IReturnItem } from './return-refund.model';
-export { AuditLog, IAuditLog } from './audit-log.model';
+export { Counter, ICounter } from './counter.model';
+export { Settings, ISettings } from './settings.model';
+export { Short, IShort } from './short.model';
+export { SiteVisit, ISiteVisit } from './site-visit.model';

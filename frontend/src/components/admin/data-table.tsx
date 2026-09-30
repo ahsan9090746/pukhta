@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import {
   Table,
   TableBody,
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 
 interface Column {
   header: string;
@@ -24,6 +24,13 @@ interface DataTableProps {
   data: any[];
   isLoading?: boolean;
   searchKey?: string;
+  /**
+   * When provided, a leading arrow column is rendered on the left. Clicking
+   * the arrow expands the row and shows this content underneath it.
+   */
+  renderRowDetails?: (row: any) => React.ReactNode;
+  /** Only rows where this returns true get an expand arrow (defaults to all rows). */
+  isRowExpandable?: (row: any) => boolean;
 }
 
 export default function DataTable({
@@ -31,8 +38,15 @@ export default function DataTable({
   data,
   isLoading,
   searchKey,
+  renderRowDetails,
+  isRowExpandable,
 }: DataTableProps) {
   const [search, setSearch] = useState("");
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+
+  const expandable = !!renderRowDetails;
+  const toggleRow = (key: string) =>
+    setExpandedRows((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const items = Array.isArray(data) ? data : [];
 
@@ -79,6 +93,7 @@ export default function DataTable({
         <Table>
           <TableHeader>
             <TableRow>
+              {expandable && <TableHead className="w-10" />}
               {columns.map((col) => (
                 <TableHead key={col.accessorKey}>{col.header}</TableHead>
               ))}
@@ -92,17 +107,53 @@ export default function DataTable({
                 </TableCell>
               </TableRow>
             ) : (
-              filteredData.map((row, i) => (
-                <TableRow key={row._id || i}>
-                  {columns.map((col) => (
-                    <TableCell key={col.accessorKey}>
-                      {col.cell
-                        ? col.cell(row)
-                        : getNestedValue(row, col.accessorKey) ?? "-"}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              filteredData.map((row, i) => {
+                const rowKey = String(row._id ?? i);
+                const canExpand =
+                  expandable && (!isRowExpandable || isRowExpandable(row));
+                const isOpen = !!expandedRows[rowKey];
+                return (
+                  <Fragment key={rowKey}>
+                    <TableRow>
+                      {expandable && (
+                        <TableCell className="w-10 px-2">
+                          {canExpand && (
+                            <button
+                              type="button"
+                              aria-label={isOpen ? "Collapse row" : "Expand row"}
+                              onClick={() => toggleRow(rowKey)}
+                              className="rounded p-1 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                              <ChevronRight
+                                className={`h-4 w-4 transition-transform ${
+                                  isOpen ? "rotate-90" : ""
+                                }`}
+                              />
+                            </button>
+                          )}
+                        </TableCell>
+                      )}
+                      {columns.map((col) => (
+                        <TableCell key={col.accessorKey}>
+                          {col.cell
+                            ? col.cell(row)
+                            : getNestedValue(row, col.accessorKey) ?? "-"}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    {isOpen && renderRowDetails && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={columns.length + 1}
+                          className="bg-muted/40"
+                        >
+                          {renderRowDetails(row)}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
+                );
+              })
             )}
           </TableBody>
         </Table>

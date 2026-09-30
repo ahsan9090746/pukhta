@@ -18,6 +18,7 @@ import {
   Trash2,
   Star,
   Tag,
+  Sparkles,
   Layers,
   Hash,
   DollarSign,
@@ -30,6 +31,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import Image from "next/image";
+import { isRichText, sanitizeRichText } from "@/lib/rich-text";
 
 export default function AdminProductDetailPage() {
   const params = useParams();
@@ -111,6 +113,12 @@ export default function AdminProductDetailPage() {
                 <Badge className="bg-amber-100 text-amber-700 border-amber-200">
                   <Star className="h-3 w-3 mr-1" />
                   Featured
+                </Badge>
+              )}
+              {product.isNewArrival && (
+                <Badge className="bg-green-100 text-green-700 border-green-200">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  New Arrival
                 </Badge>
               )}
             </div>
@@ -197,14 +205,28 @@ export default function AdminProductDetailPage() {
           {/* Description */}
           <div className="border rounded-xl p-6 bg-card">
             <h2 className="font-semibold mb-4">Description</h2>
-            <div className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {product.description || "No description provided."}
-            </div>
+            {isRichText(product.description) ? (
+              <div
+                className="text-sm text-muted-foreground [&_a]:underline [&_h1]:text-base [&_h1]:font-bold [&_h2]:text-base [&_h2]:font-bold [&_h3]:text-sm [&_h3]:font-semibold [&_li]:my-0.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5"
+                dangerouslySetInnerHTML={{ __html: sanitizeRichText(product.description) }}
+              />
+            ) : (
+              <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {product.description || "No description provided."}
+              </div>
+            )}
             {product.shortDescription && (
               <>
                 <Separator className="my-4" />
                 <h3 className="font-medium text-sm mb-2">Short Description</h3>
-                <p className="text-sm text-muted-foreground">{product.shortDescription}</p>
+                {isRichText(product.shortDescription) ? (
+                  <div
+                    className="text-sm text-muted-foreground [&_p]:my-1 [&_strong]:font-semibold"
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichText(product.shortDescription) }}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">{product.shortDescription}</p>
+                )}
               </>
             )}
           </div>
@@ -357,25 +379,29 @@ export default function AdminProductDetailPage() {
             </div>
           </div>
 
-          {/* Category */}
+          {/* Categories */}
           <div className="border rounded-xl p-6 bg-card">
-            <h2 className="font-semibold mb-4">Category</h2>
+            <h2 className="font-semibold mb-4">Categories</h2>
             <div className="space-y-2">
-              {product.category ? (
-                <Link
-                  href={`/admin/categories/${product.category._id || product.category}`}
-                  className="inline-flex items-center gap-2 text-sm font-medium hover:underline"
-                >
-                  <Tag className="h-4 w-4" />
-                  {product.category.name || product.category}
-                </Link>
+              {product.categories && product.categories.length > 0 ? (
+                product.categories.map((cat: any) => (
+                  <Link
+                    key={cat._id}
+                    href={`/admin/categories/${cat._id}`}
+                    className="inline-flex items-center gap-2 text-sm font-medium hover:underline block"
+                  >
+                    <Tag className="h-4 w-4" />
+                    {cat.name}
+                  </Link>
+                ))
               ) : (
-                <span className="text-sm text-muted-foreground">No category</span>
+                <span className="text-sm text-muted-foreground">No categories</span>
               )}
               {product.subcategory && (
-                <p className="text-sm text-muted-foreground ml-6">
-                  / {product.subcategory}
-                </p>
+                <div className="ml-2 pl-4 border-l border-muted">
+                  <p className="text-sm font-medium">{product.subcategory}</p>
+                  <span className="text-xs text-muted-foreground">Subcategory</span>
+                </div>
               )}
             </div>
           </div>
@@ -422,6 +448,21 @@ export default function AdminProductDetailPage() {
                     <span>{product.seoDescription}</span>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Text Styling */}
+          {(product.textStyling && Object.values(product.textStyling).some((v) => v)) && (
+            <div className="border rounded-xl p-6 bg-card">
+              <h2 className="font-semibold mb-4">Text Styling</h2>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {product.textStyling.titleFontSize && <div><span className="text-muted-foreground">Title Size:</span> <span className="font-medium">{product.textStyling.titleFontSize}</span></div>}
+                {product.textStyling.titleFontWeight && <div><span className="text-muted-foreground">Title Weight:</span> <span className="font-medium">{product.textStyling.titleFontWeight}</span></div>}
+                {product.textStyling.titleStyle && <div><span className="text-muted-foreground">Title Style:</span> <span className="font-medium">{product.textStyling.titleStyle}</span></div>}
+                {product.textStyling.descFontSize && <div><span className="text-muted-foreground">Desc Size:</span> <span className="font-medium">{product.textStyling.descFontSize}</span></div>}
+                {product.textStyling.descFontWeight && <div><span className="text-muted-foreground">Desc Weight:</span> <span className="font-medium">{product.textStyling.descFontWeight}</span></div>}
+                {product.textStyling.descStyle && <div><span className="text-muted-foreground">Desc Style:</span> <span className="font-medium">{product.textStyling.descStyle}</span></div>}
               </div>
             </div>
           )}

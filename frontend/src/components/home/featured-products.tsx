@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Product } from "@/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import SectionHeader from "@/components/home/section-header";
 
 interface FeaturedProductsProps {
   products: Product[];
@@ -45,11 +46,13 @@ export default function FeaturedProducts({ products, loading }: FeaturedProducts
   return (
     <section className="container py-16">
       <div className="flex items-center justify-between mb-10">
-        <div>
-          <h2 className="text-3xl font-bold">Featured Products</h2>
-          <p className="text-muted-foreground mt-1">Handpicked selections just for you</p>
-        </div>
-        <div className="flex gap-2">
+        <SectionHeader
+          badge="Editor's Pick"
+          align="left"
+        >
+          Featured Products
+        </SectionHeader>
+        <div className="flex gap-2 shrink-0 ml-4">
           <Button variant="outline" size="icon" onClick={() => scroll("left")}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -73,7 +76,7 @@ export default function FeaturedProducts({ products, loading }: FeaturedProducts
 
       <div className="text-center mt-8">
         <Button asChild variant="outline" size="lg">
-          <Link href="/products">View All Products</Link>
+          <Link href="/product-category">View All Products</Link>
         </Button>
       </div>
     </section>

@@ -151,9 +151,8 @@ export default function AdminLoginPage() {
         </div>
 
         <p className="text-center mt-6 text-sm text-muted-foreground">
-          Customer?{" "}
-          <Link href="/login" className="text-primary hover:underline font-medium">
-            Go to regular login
+          <Link href="/" className="text-primary hover:underline font-medium">
+            Browse the store
           </Link>
         </p>
       </motion.div>

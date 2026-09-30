@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: __dirname,
+  allowedDevOrigins: ['192.168.100.6'],
   images: {
     remotePatterns: [
       {
@@ -26,6 +27,17 @@ const nextConfig = {
         port: '5001',
       },
     ],
+  },
+  async redirects() {
+    return [
+      // The About page now lives at /about-us — keep the old URL alive for
+      // bookmarks, shared links and anything already indexed by search engines.
+      {
+        source: '/about',
+        destination: '/about-us',
+        permanent: true,
+      },
+    ];
   },
   async rewrites() {
     return [

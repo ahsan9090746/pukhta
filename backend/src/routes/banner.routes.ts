@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { BannerController } from '../controllers/banner.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/role.middleware';
-import { validateBanner, validateObjectId } from '../utils/validators';
-import { uploadSingleImage } from '../utils/upload';
+import { validateBanner, validateBannerUpdate, validateObjectId } from '../utils/validators';
+import { uploadBannerImages } from '../utils/upload';
 
 const router = Router();
 
@@ -15,7 +15,7 @@ router.post(
   '/',
   authenticate,
   requirePermission('banners.manage'),
-  uploadSingleImage('image'),
+  uploadBannerImages(),
   validateBanner,
   BannerController.create
 );
@@ -24,8 +24,9 @@ router.put(
   '/:id',
   authenticate,
   requirePermission('banners.manage'),
-  uploadSingleImage('image'),
+  uploadBannerImages(),
   validateObjectId,
+  validateBannerUpdate,
   BannerController.update
 );
 

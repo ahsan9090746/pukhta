@@ -21,7 +21,7 @@ afterAll(async () => {
   await User.deleteMany({});
   await Role.deleteMany({});
   await mongoose.disconnect();
-  server.close();
+  if (server.listening) server.close();
 });
 
 describe('Auth Endpoints', () => {
@@ -47,7 +47,7 @@ describe('Auth Endpoints', () => {
       expect(res.body.data.user.email).toBe(testUser.email);
       expect(res.body.data.user.name).toBe(testUser.name);
       expect(res.body.data.user.role).toBe('customer');
-      expect(res.body.data.token).toBeDefined();
+      expect(res.body.data.accessToken).toBeDefined();
       userId = res.body.data.user._id;
     });
 
@@ -55,7 +55,7 @@ describe('Auth Endpoints', () => {
       const res = await request(app)
         .post(`${API_URL}/auth/register`)
         .send(testUser)
-        .expect(400);
+        .expect(409);
 
       expect(res.body.success).toBe(false);
     });
@@ -174,10 +174,10 @@ describe('Auth Endpoints', () => {
     });
   });
 
-  describe('POST /api/auth/change-password', () => {
+  describe('PUT /api/auth/change-password', () => {
     it('should change password with valid current password', async () => {
       const res = await request(app)
-        .post(`${API_URL}/auth/change-password`)
+        .put(`${API_URL}/auth/change-password`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ currentPassword: testUser.password, newPassword: 'NewPass456' })
         .expect(200);
@@ -187,7 +187,7 @@ describe('Auth Endpoints', () => {
 
     it('should not change password with wrong current password', async () => {
       const res = await request(app)
-        .post(`${API_URL}/auth/change-password`)
+        .put(`${API_URL}/auth/change-password`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ currentPassword: 'WrongPass', newPassword: 'NewPass789' })
         .expect(401);

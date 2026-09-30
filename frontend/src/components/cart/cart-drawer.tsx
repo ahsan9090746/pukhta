@@ -61,7 +61,7 @@ export default function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
           >
             <div className="flex items-center justify-between px-5 h-16 border-b shrink-0">
               <div className="flex items-center gap-2">
-                <ShoppingBag className="h-5 w-5 text-gold" />
+                <ShoppingBag className="h-5 w-5 text-brand-gold" />
                 <h2 className="font-semibold text-lg">Your Cart</h2>
                 <span className="text-sm text-muted-foreground">({items.length})</span>
               </div>
@@ -85,10 +85,10 @@ export default function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
                 </p>
                 <Button
                   asChild
-                  className="bg-gold hover:bg-gold-dark text-white"
+                  className="bg-brand-gold hover:bg-brand-gold-dark text-white"
                   onClick={() => onOpenChange(false)}
                 >
-                  <Link href="/products">Start Shopping</Link>
+                  <Link href="/product-category">Start Shopping</Link>
                 </Button>
               </div>
             ) : (
@@ -103,7 +103,7 @@ export default function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
                       className="flex gap-3 p-2.5 rounded-xl border bg-card"
                     >
                       <Link
-                        href={`/products/${item.product?.slug}`}
+                        href={`/product/${item.product?.slug}`}
                         onClick={() => onOpenChange(false)}
                         className="relative h-20 w-20 rounded-lg overflow-hidden bg-muted shrink-0"
                       >
@@ -118,9 +118,9 @@ export default function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <Link
-                            href={`/products/${item.product?.slug}`}
+                            href={`/product/${item.product?.slug}`}
                             onClick={() => onOpenChange(false)}
-                            className="text-sm font-medium line-clamp-1 hover:text-gold-dark transition-colors"
+                            className="text-sm font-medium line-clamp-1 hover:text-brand-gold transition-colors"
                           >
                             {item.product?.name || "Product"}
                           </Link>
@@ -158,7 +158,7 @@ export default function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
                               <Plus className="h-3 w-3" />
                             </button>
                           </div>
-                          <span className="text-sm font-bold text-gold-dark">
+                          <span className="text-sm font-bold text-brand-gold">
                             Rs {((item.price || 0) * (item.quantity || 0)).toLocaleString()}
                           </span>
                         </div>
@@ -170,14 +170,14 @@ export default function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
                 <div className="border-t px-5 py-4 space-y-3 bg-card shrink-0">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-bold text-gold-dark">Rs {subtotal.toLocaleString()}</span>
+                    <span className="font-bold text-brand-gold">Rs {subtotal.toLocaleString()}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Delivery: Free on all orders
                   </p>
                   <Button
                     onClick={goToCheckout}
-                    className="w-full h-11 bg-gold hover:bg-gold-dark text-white font-semibold"
+                    className="w-full h-11 bg-brand-gold hover:bg-brand-gold-dark text-white font-semibold"
                   >
                     <ShoppingBag className="h-4 w-4 mr-2" />
                     Checkout

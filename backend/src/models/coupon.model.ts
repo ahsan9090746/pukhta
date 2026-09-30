@@ -9,10 +9,10 @@ export interface ICoupon extends Document {
   maxDiscount?: number;
   usageLimit?: number;
   usedCount: number;
-  applicableProducts: mongoose.Types.ObjectId[];
-  applicableCategories: mongoose.Types.ObjectId[];
   isActive: boolean;
   expiresAt?: Date;
+  isDeleted: boolean;
+  deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
   isExpired: boolean;
@@ -23,7 +23,6 @@ const couponSchema = new Schema<ICoupon>(
     code: {
       type: String,
       required: [true, 'Coupon code is required'],
-      unique: true,
       uppercase: true,
       trim: true,
       minlength: [3, 'Code must be at least 3 characters'],
@@ -63,26 +62,22 @@ const couponSchema = new Schema<ICoupon>(
       default: 0,
       min: 0,
     },
-    applicableProducts: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Product',
-      },
-    ],
-    applicableCategories: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Category',
-      },
-    ],
     isActive: { type: Boolean, default: true },
     expiresAt: { type: Date },
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date },
   },
   { timestamps: true }
 );
 
 couponSchema.index({ isActive: 1 });
 couponSchema.index({ expiresAt: 1 });
+
+// Unique only among live coupons so a soft-deleted code can be reused.
+couponSchema.index(
+  { code: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: false } }
+);
 
 couponSchema.virtual('isExpired').get(function () {
   if (!this.expiresAt) return false;

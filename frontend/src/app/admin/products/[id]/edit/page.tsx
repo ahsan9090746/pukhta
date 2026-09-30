@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,7 +10,8 @@ import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from "@/components/ui/rich-text-editor";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Breadcrumb from "@/components/common/breadcrumb";
@@ -21,13 +22,20 @@ import { getImageUrl } from "@/lib/utils";
 const productSchema = z.object({
   name: z.string().min(2, "Name is required"),
   slug: z.string().min(2, "Slug is required"),
-  description: z.string().min(10, "Description is required"),
+  description: z
+    .string()
+    .refine(
+      (v) => v.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim().length >= 10,
+      "Description is required"
+    ),
   price: z.coerce.number().min(0.01),
   compareAtPrice: z.coerce.number().optional(),
   sku: z.string().min(1, "SKU is required"),
   costPrice: z.coerce.number().min(0).optional(),
   shortDescription: z.string().optional(),
-  categoryId: z.string().min(1, "Category is required"),
+  metaTitle: z.string().max(60, "Meta title cannot exceed 60 characters").optional(),
+  metaDescription: z.string().max(160, "Meta description cannot exceed 160 characters").optional(),
+  categoriesId: z.array(z.string()).min(1, "At least one category is required"),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -57,7 +65,7 @@ export default function EditProductPage() {
       api.get(`/products/${params.id}`).then((res) => res.data.data.product),
   });
 
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<ProductFormData>({
+  const { register, handleSubmit, control, reset, watch, formState: { errors } } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
   });
 
@@ -71,6 +79,8 @@ export default function EditProductPage() {
 
   useEffect(() => {
     if (product) {
+      const categoryIds = product.categories?.map((c: any) => c._id || c) || 
+                         (product.category ? [product.category._id || product.category] : []);
       reset({
         name: product.name,
         slug: product.slug,
@@ -80,7 +90,9 @@ export default function EditProductPage() {
         sku: product.sku,
         costPrice: product.costPrice || undefined,
         shortDescription: product.shortDescription || "",
-        categoryId: product.category?._id,
+        metaTitle: product.metaTitle || "",
+        metaDescription: product.metaDescription || "",
+        categoriesId: categoryIds,
       });
       setVariants(product.variants || []);
       setSpecs(product.specifications || []);
@@ -136,13 +148,24 @@ const updateProductMutation = useMutation({
     updateProductMutation.mutate((() => {
       const fd = new FormData();
       Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && value !== "" && value !== null) fd.append(key, String(value));
+        // Meta fields are appended explicitly below so clearing them (empty
+        // string) still reaches the backend and resets the saved value.
+        if (key === "metaTitle" || key === "metaDescription") return;
+        if (value !== undefined && value !== "" && value !== null) {
+          if (Array.isArray(value)) {
+            fd.append(key, JSON.stringify(value));
+          } else {
+            fd.append(key, String(value));
+          }
+        }
       });
       // Product price is the same for every variant — apply it to each variant
       fd.append("variants", JSON.stringify(variants.map((v) => ({ ...v, price: data.price }))));
       fd.append("specifications", JSON.stringify(specs));
       fd.append("existingImages", JSON.stringify(existingImages));
       if (altText) fd.append("altText", altText);
+      fd.append("metaTitle", data.metaTitle || "");
+      fd.append("metaDescription", data.metaDescription || "");
       newImages.forEach((file) => fd.append("images", file));
       return fd;
     })());
@@ -219,8 +242,27 @@ const updateProductMutation = useMutation({
               <CardContent className="space-y-4">
                 <div className="space-y-2"><Label>Name</Label><Input {...register("name")} />{errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}</div>
                 <div className="space-y-2"><Label>Slug</Label><Input {...register("slug")} />{errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}</div>
-                <div className="space-y-2"><Label>Description</Label><Textarea rows={6} {...register("description")} />{errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}</div>
-                <div className="space-y-2"><Label>Short Description</Label><Input {...register("shortDescription")} placeholder="One-line highlight shown under the product name" /></div>
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Controller
+                    control={control}
+                    name="description"
+                    render={({ field }) => (
+                      <RichTextEditor value={field.value || ""} onChange={field.onChange} minHeight={180} />
+                    )}
+                  />
+                  {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Short Description</Label>
+                  <Controller
+                    control={control}
+                    name="shortDescription"
+                    render={({ field }) => (
+                      <RichTextEditor value={field.value || ""} onChange={field.onChange} minHeight={110} />
+                    )}
+                  />
+                </div>
               </CardContent>
             </Card>
             <Card>
@@ -287,7 +329,20 @@ const updateProductMutation = useMutation({
             <Card>
               <CardHeader><CardTitle>Organization</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2"><Label>Category</Label><select className="w-full border rounded-md p-2" {...register("categoryId")}><option value="">Select</option>{categories?.map((c: any) => <option key={c._id} value={c._id}>{c.name}</option>)}</select></div>
+                <Controller
+                  control={control}
+                  name="categoriesId"
+                  rules={{ required: "At least one category is required" }}
+                  render={({ field }) => (
+                    <MultiSelect
+                      options={categories?.map((c: any) => ({ value: c._id, label: c.name })) || []}
+                      value={field.value || []}
+                      onChange={field.onChange}
+                      placeholder="Select categories"
+                      label="Categories"
+                    />
+                  )}
+                />
               </CardContent>
             </Card>
             <Card>
@@ -352,6 +407,32 @@ const updateProductMutation = useMutation({
                 />
               </CardContent>
             </Card>
+            <Card>
+              <CardHeader><CardTitle>SEO</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Meta Title</Label>
+                  <Input
+                    placeholder="Enter meta title (max 60 characters)"
+                    maxLength={60}
+                    {...register("metaTitle")}
+                  />
+                  {errors.metaTitle && <p className="text-sm text-destructive">{errors.metaTitle.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Meta Description</Label>
+                  <textarea
+                    placeholder="Enter meta description (max 160 characters)"
+                    maxLength={160}
+                    rows={3}
+                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    {...register("metaDescription")}
+                  />
+                  {errors.metaDescription && <p className="text-sm text-destructive">{errors.metaDescription.message}</p>}
+                </div>
+              </CardContent>
+            </Card>
+
             <Button type="submit" className="w-full" disabled={updateProductMutation.isPending}>
               {updateProductMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : "Save Changes"}
             </Button>

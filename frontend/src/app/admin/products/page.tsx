@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { Plus, Search, Trash2, Edit, Eye } from "lucide-react";
 import Image from "next/image";
 import { getImageUrl } from "@/lib/utils";
+import SelectNewArrivals from "@/components/admin/select-new-arrivals";
 
 export default function AdminProductsPage() {
   const queryClient = useQueryClient();
@@ -130,12 +131,15 @@ export default function AdminProductsPage() {
     >
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Products</h1>
-        <Button asChild>
-          <Link href="/admin/products/new">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Product
-          </Link>
-        </Button>
+        <div className="flex items-center gap-3">
+          <SelectNewArrivals />
+          <Button asChild>
+            <Link href="/admin/products/new">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Product
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-4">

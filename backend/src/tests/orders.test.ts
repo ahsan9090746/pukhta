@@ -97,7 +97,7 @@ afterAll(async () => {
   await User.deleteMany({});
   await Role.deleteMany({});
   await mongoose.disconnect();
-  server.close();
+  if (server.listening) server.close();
 });
 
 describe('Order Endpoints', () => {

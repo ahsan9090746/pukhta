@@ -38,13 +38,59 @@ export const validateLogin = [
   handleValidationErrors,
 ];
 
+// Validates categoriesId: a JSON string of MongoIds (multipart/form-data)
+// or a plain array of MongoIds (JSON body).
+const validateCategoryIds = (value: any) => {
+  let ids = value;
+  if (typeof ids === 'string') {
+    try {
+      ids = JSON.parse(ids);
+    } catch {
+      throw new Error('Valid category ID is required');
+    }
+  }
+  if (!Array.isArray(ids) || ids.length === 0) {
+    throw new Error('Valid category ID is required');
+  }
+  for (const id of ids) {
+    if (!/^[0-9a-fA-F]{24}$/.test(String(id))) {
+      throw new Error('Valid category ID is required');
+    }
+  }
+  return true;
+};
+
 export const validateProduct = [
   body('name').trim().notEmpty().withMessage('Name is required').isLength({ max: 200 }),
   body('description').trim().notEmpty().withMessage('Description is required'),
-  // Frontend sends categoryId; category is required
-  body('categoryId').isMongoId().withMessage('Valid category ID is required'),
+  // Category is required — the admin UI sends categoriesId (JSON array via
+  // multipart/form-data), direct API calls may send categoryId or `category`.
+  // Accept all three shapes.
+  body('categoriesId').optional({ values: 'falsy' }).custom(validateCategoryIds),
+  body('categoryId').optional({ values: 'falsy' }).isMongoId().withMessage('Valid category ID is required'),
+  body('category').optional({ values: 'falsy' }).isMongoId().withMessage('Valid category ID is required'),
+  body().custom((_value, { req }) => {
+    if (!req.body?.categoriesId && !req.body?.categoryId && !req.body?.category) {
+      throw new Error('Valid category ID is required');
+    }
+    return true;
+  }),
   body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   // SKU is optional — the controller auto-generates a unique one when missing
+  body('sku').optional({ values: 'falsy' }).trim(),
+  handleValidationErrors,
+];
+
+// PUT /api/products/:id — partial update; nothing is required, but whatever
+// is provided must be valid.
+export const validateProductUpdate = [
+  body('name').optional().trim().isLength({ max: 200 }).withMessage('Name cannot exceed 200 characters'),
+  body('description').optional().trim(),
+  // The admin edit form sends categoriesId (JSON array via multipart)
+  body('categoriesId').optional({ values: 'falsy' }).custom(validateCategoryIds),
+  body('categoryId').optional({ values: 'falsy' }).isMongoId().withMessage('Valid category ID is required'),
+  body('category').optional({ values: 'falsy' }).isMongoId().withMessage('Valid category ID is required'),
+  body('price').optional().isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   body('sku').optional({ values: 'falsy' }).trim(),
   handleValidationErrors,
 ];
@@ -63,9 +109,44 @@ export const validateBrand = [
 
 export const validateBanner = [
   body('title').trim().notEmpty().withMessage('Title is required').isLength({ max: 200 }),
-  // Image file comes via multipart upload; presence is enforced in the controller
+  // Images come via multipart upload — "image" = desktop (required, checked in
+  // the controller because it may already be stored), "mobileImage" = mobile.
   body('image').optional().trim(),
-  body('position').optional().isIn(['hero', 'middle', 'footer']),
+  body('mobileImage').optional().trim(),
+  body('altText').optional().trim().isLength({ max: 200 }).withMessage('Alt text cannot exceed 200 characters'),
+  body('link').optional().trim().isLength({ max: 500 }).withMessage('Link cannot exceed 500 characters'),
+  body('linkType')
+    .optional()
+    .isIn(['url', 'product', 'categories'])
+    .withMessage('Link type must be url, product or categories'),
+  // Banners live in the homepage hero slider only
+  body('position').optional().isIn(['hero']).withMessage('Banners can only use the hero position'),
+  body('sortOrder')
+    .optional({ values: 'falsy' })
+    .isInt({ min: 1 })
+    .withMessage('Sort order must be a whole number starting from 1'),
+  handleValidationErrors,
+];
+
+// PUT /api/banners/:id — partial update; whatever is provided must be valid.
+export const validateBannerUpdate = [
+  body('title')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Title is required')
+    .isLength({ max: 200 }),
+  body('altText').optional().trim().isLength({ max: 200 }).withMessage('Alt text cannot exceed 200 characters'),
+  body('link').optional().trim().isLength({ max: 500 }).withMessage('Link cannot exceed 500 characters'),
+  body('linkType')
+    .optional()
+    .isIn(['url', 'product', 'categories'])
+    .withMessage('Link type must be url, product or categories'),
+  body('position').optional().isIn(['hero']).withMessage('Banners can only use the hero position'),
+  body('sortOrder')
+    .optional({ values: 'falsy' })
+    .isInt({ min: 1 })
+    .withMessage('Sort order must be a whole number starting from 1'),
   handleValidationErrors,
 ];
 
@@ -92,10 +173,34 @@ export const validateOrder = [
   handleValidationErrors,
 ];
 
+export const validateTrackOrder = [
+  body('orderCode')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage('Order code is too long'),
+  body('phone')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage('Phone number is too long'),
+  // At least one of orderCode / phone must be provided
+  body().custom((value) => {
+    if (!value?.orderCode && !value?.phone) {
+      throw new Error('Please enter either an Order Code or a Phone Number');
+    }
+    return true;
+  }),
+  handleValidationErrors,
+];
+
 export const validateReview = [
   body('rating').isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5'),
   body('title').trim().notEmpty().withMessage('Title is required').isLength({ max: 200 }),
   body('comment').trim().notEmpty().withMessage('Comment is required').isLength({ max: 2000 }),
+  // Guest reviews — required when no authenticated user (enforced in the controller)
+  body('name').optional().trim().isLength({ max: 100 }).withMessage('Name cannot exceed 100 characters'),
+  body('email').optional().trim().isEmail().withMessage('Valid email is required').isLength({ max: 200 }),
   handleValidationErrors,
 ];
 

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config';
 import { User, IUser } from '../models/user.model';
 import { UnauthorizedError, ForbiddenError } from '../utils/AppError';
+import { NOT_DELETED } from '../utils/softDelete';
 
 declare global {
   namespace Express {
@@ -38,7 +39,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 
         try {
           const refreshDecoded = jwt.verify(refreshToken, config.jwtRefreshSecret) as { id: string };
-          const user = await User.findById(refreshDecoded.id);
+          const user = await User.findOne({ _id: refreshDecoded.id, ...NOT_DELETED });
           if (!user || !user.isActive) {
             throw new UnauthorizedError('User not found or inactive');
           }
@@ -61,7 +62,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       }
     }
 
-    const user = await User.findById(decoded.id);
+    const user = await User.findOne({ _id: decoded.id, ...NOT_DELETED });
     if (!user) {
       throw new UnauthorizedError('User no longer exists');
     }
@@ -93,7 +94,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
 
     try {
       const decoded = jwt.verify(token, config.jwtSecret) as { id: string };
-      const user = await User.findById(decoded.id);
+      const user = await User.findOne({ _id: decoded.id, ...NOT_DELETED });
       if (user && user.isActive) {
         req.user = user;
       }

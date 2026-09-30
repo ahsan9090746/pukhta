@@ -19,6 +19,10 @@ declare module 'framer-motion' {
   export function useMotionValue(val: any): any;
   export function useTransform(input: any, inputRange: any, outputRange: any): any;
   export function useSpring(val: any, config?: any): any;
+  export function useReducedMotion(): boolean | null;
+  export type Variants = any;
+  export type Transition = any;
+  export type MotionValue<T = any> = any;
 }
 
 declare module '@tanstack/react-query' {

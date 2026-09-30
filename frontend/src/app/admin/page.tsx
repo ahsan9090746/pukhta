@@ -15,8 +15,18 @@ import {
   Package,
   TrendingUp,
   TrendingDown,
+  Eye,
+  Clock,
 } from "lucide-react";
 import { format } from "date-fns";
+
+/** % change helper, guarded against divide-by-zero */
+const pctChange = (today?: number, yesterday?: number): number => {
+  const t = today || 0;
+  const y = yesterday || 0;
+  if (!y) return 0;
+  return Math.round(((t - y) / y) * 100);
+};
 
 export default function AdminDashboard() {
   const { data: stats, isLoading } = useQuery({
@@ -81,6 +91,33 @@ export default function AdminDashboard() {
     );
   }
 
+  const todayCards = [
+    {
+      title: "Today's Visitors",
+      value: (stats?.visitors?.today ?? 0).toString(),
+      change: pctChange(stats?.visitors?.today, stats?.visitors?.yesterday),
+      icon: Eye,
+    },
+    {
+      title: "Today's Orders",
+      value: (stats?.orders?.today ?? 0).toString(),
+      change: pctChange(stats?.orders?.today, stats?.orders?.yesterday),
+      icon: ShoppingCart,
+    },
+    {
+      title: "Today's Revenue",
+      value: `Rs ${(stats?.revenue?.today ?? 0).toLocaleString()}`,
+      change: pctChange(stats?.revenue?.today, stats?.revenue?.yesterday),
+      icon: DollarSign,
+    },
+    {
+      title: "Pending Orders",
+      value: (stats?.orders?.pending ?? 0).toString(),
+      change: null,
+      icon: Clock,
+    },
+  ];
+
   const statsCards = [
     {
       title: "Total Revenue",
@@ -141,6 +178,28 @@ export default function AdminDashboard() {
       className="space-y-6"
     >
       <h1 className="text-3xl font-bold">Dashboard</h1>
+
+      {/* Today at a glance */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          Today at a glance
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {todayCards.map((stat, i) => (
+            <motion.div
+              key={stat.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+            >
+              <StatsCard
+                {...stat}
+                changeLabel={stat.change === null ? "" : "vs yesterday"}
+              />
+            </motion.div>
+          ))}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {statsCards.map((stat, i) => (

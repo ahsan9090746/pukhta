@@ -5,13 +5,14 @@ import { NotFoundError, BadRequestError } from '../utils/AppError';
 import { catchAsync } from '../utils/catchAsync';
 import { parsePagination, parseSort, buildPaginationResponse } from '../utils/pagination';
 import { logger } from '../utils/logger';
+import { NOT_DELETED } from '../utils/softDelete';
 
 export class InventoryController {
   static getInventory = catchAsync(async (req: Request, res: Response) => {
     const { page, limit, skip } = parsePagination(req.query as any);
     const sort = parseSort(req.query.sort as string);
 
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = { ...NOT_DELETED };
     if (req.query.lowStock === 'true') {
       filter.$expr = { $lt: [{ $sum: '$variants.stock' }, 10] };
     }
@@ -69,7 +70,7 @@ export class InventoryController {
       throw new BadRequestError('Quantity must not be zero');
     }
 
-    const product = await Product.findById(productId);
+    const product = await Product.findOne({ _id: productId, ...NOT_DELETED });
     if (!product) {
       throw new NotFoundError('Product');
     }
@@ -147,7 +148,7 @@ export class InventoryController {
     const results = [];
 
     for (const update of updates) {
-      const product = await Product.findById(update.productId);
+      const product = await Product.findOne({ _id: update.productId, ...NOT_DELETED });
       if (!product) {
         results.push({
           productId: update.productId,
@@ -228,8 +229,8 @@ export class InventoryController {
 
     const [movements, total] = await Promise.all([
       InventoryMovement.find(filter)
-        .populate('product', 'name sku')
-        .populate('performedBy', 'name email')
+        .populate('product', 'name sku variants')
+        .populate('performedBy', 'name email role')
         .sort(sort)
         .skip(skip)
         .limit(limit)
@@ -237,10 +238,26 @@ export class InventoryController {
       InventoryMovement.countDocuments(filter),
     ]);
 
+    // Attach variant details from product variants
+    const enriched = movements.map((m: any) => {
+      let variantDetails = null;
+      if (m.variant && m.product?.variants) {
+        variantDetails = m.product.variants.find(
+          (v: any) => v._id?.toString() === m.variant?.toString()
+        );
+      }
+      return {
+        ...m,
+        variantDetails: variantDetails
+          ? { size: variantDetails.size, color: variantDetails.color, sku: variantDetails.sku }
+          : null,
+      };
+    });
+
     res.status(200).json({
       success: true,
       data: {
-        data: movements,
+        data: enriched,
         pagination: buildPaginationResponse(total, page, limit),
       },
     });
@@ -251,6 +268,7 @@ export class InventoryController {
 
     const products = await Product.find({
       isActive: true,
+      ...NOT_DELETED,
       $expr: { $lt: [{ $sum: '$variants.stock' }, threshold] },
     })
       .select('name sku variants thumbnail')

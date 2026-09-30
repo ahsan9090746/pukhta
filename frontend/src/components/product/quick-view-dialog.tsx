@@ -118,7 +118,7 @@ export default function QuickViewDialog({ product, open, onOpenChange }: QuickVi
               </motion.div>
             </AnimatePresence>
             {hasDiscount && (
-              <Badge className="absolute top-3 left-3 bg-gold text-white hover:bg-gold">
+              <Badge className="absolute top-3 left-3 bg-brand-gold text-white hover:bg-brand-gold">
                 -{discountPct}%
               </Badge>
             )}
@@ -129,7 +129,7 @@ export default function QuickViewDialog({ product, open, onOpenChange }: QuickVi
                     key={i}
                     onClick={() => setSelectedImage(i)}
                     className={`relative h-10 w-10 rounded-md overflow-hidden border-2 transition-all ${
-                      selectedImage === i ? "border-gold" : "border-white/60 opacity-70 hover:opacity-100"
+                      selectedImage === i ? "border-brand-gold" : "border-white/60 opacity-70 hover:opacity-100"
                     }`}
                   >
                     <Image src={getImageUrl(img)} alt="" fill sizes="40px" className="object-cover" />
@@ -144,7 +144,7 @@ export default function QuickViewDialog({ product, open, onOpenChange }: QuickVi
             <h3 className="text-xl font-bold leading-snug">{product.name}</h3>
 
             <div className="flex items-baseline gap-3">
-              <span className="text-2xl font-bold text-gold-dark">Rs {product.price.toLocaleString()}</span>
+              <span className="text-2xl font-bold text-brand-gold">Rs {product.price.toLocaleString()}</span>
               {hasDiscount && (
                 <span className="text-muted-foreground line-through">
                   Rs {product.compareAtPrice!.toLocaleString()}
@@ -223,7 +223,7 @@ export default function QuickViewDialog({ product, open, onOpenChange }: QuickVi
                 <Button
                   onClick={() => handleAddToCart(false)}
                   disabled={stock === 0}
-                  className="h-10 bg-gold hover:bg-gold-dark text-white"
+                  className="h-10 bg-brand-gold hover:bg-brand-gold-dark text-white"
                 >
                   <ShoppingCart className="h-4 w-4 mr-1.5" />
                   {stock === 0 ? "Out of Stock" : "Add to Cart"}
@@ -239,9 +239,9 @@ export default function QuickViewDialog({ product, open, onOpenChange }: QuickVi
             </div>
 
             <Link
-              href={`/products/${product.slug}`}
+              href={`/product/${product.slug}`}
               onClick={() => resetAndClose(false)}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-gold-dark transition-colors pt-1"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-brand-gold transition-colors pt-1"
             >
               View full details
               <ArrowRight className="h-3.5 w-3.5" />

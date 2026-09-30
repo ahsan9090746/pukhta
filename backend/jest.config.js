@@ -6,7 +6,13 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
     '^.+\\.ts$': 'ts-jest',
+    // sanitize-html and its htmlparser2 dependency chain ship as ESM-only
+    // packages; ts-jest (with allowJs) transpiles them to CJS for Jest.
+    '^.+\\.[cm]?js$': ['ts-jest', { tsconfig: { allowJs: true } }],
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(sanitize-html|htmlparser2|entities|domelementtype|domhandler|domutils|dom-serializer)/)',
+  ],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
@@ -26,10 +32,13 @@ module.exports = {
       statements: 50,
     },
   },
-  setupFilesAfterSetup: [],
   verbose: true,
   forceExit: true,
   clearMocks: true,
   resetModules: true,
+  // Run suites sequentially (single worker): all suites share the local
+  // footware_test database and wipe users/roles in beforeAll, so parallel
+  // runs collide (E11000 duplicate key on roles.name_1).
+  maxWorkers: 1,
   testTimeout: 30000,
 };

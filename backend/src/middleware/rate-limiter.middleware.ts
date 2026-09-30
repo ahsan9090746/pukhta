@@ -10,11 +10,13 @@ export const generalLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Don't rate-limit API requests when the backend is running locally
+  skip: () => config.nodeEnv !== 'production',
 });
 
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 attempts
+  max: 50, // 50 attempts — generous so normal use never gets locked out
   message: {
     success: false,
     error: 'Too many authentication attempts, please try again after 15 minutes.',
@@ -40,6 +42,17 @@ export const orderLimiter = rateLimit({
   message: {
     success: false,
     error: 'Too many order attempts, please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const trackLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // 30 tracking attempts
+  message: {
+    success: false,
+    error: 'Too many order tracking attempts, please try again after 15 minutes.',
   },
   standardHeaders: true,
   legacyHeaders: false,

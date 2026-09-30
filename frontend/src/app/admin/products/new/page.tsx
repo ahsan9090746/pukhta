@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,7 +10,8 @@ import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from "@/components/ui/rich-text-editor";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Breadcrumb from "@/components/common/breadcrumb";
@@ -20,13 +21,20 @@ import { Plus, Trash2, Upload, X } from "lucide-react";
 const productSchema = z.object({
   name: z.string().min(2, "Name is required"),
   slug: z.string().min(2, "Slug is required"),
-  description: z.string().min(10, "Description is required"),
+  description: z
+    .string()
+    .refine(
+      (v) => v.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim().length >= 10,
+      "Description is required"
+    ),
   price: z.coerce.number().min(0.01, "Price must be greater than 0"),
   compareAtPrice: z.coerce.number().optional(),
   sku: z.string().min(1, "SKU is required"),
   costPrice: z.coerce.number().min(0).optional(),
   shortDescription: z.string().optional(),
-  categoryId: z.string().min(1, "Category is required"),
+  metaTitle: z.string().max(60, "Meta title cannot exceed 60 characters").optional(),
+  metaDescription: z.string().max(160, "Meta description cannot exceed 160 characters").optional(),
+  categoriesId: z.array(z.string()).min(1, "At least one category is required"),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -48,7 +56,7 @@ export default function CreateProductPage() {
   const [newSizeUs, setNewSizeUs] = useState("");
   const [creatingForVariantIndex, setCreatingForVariantIndex] = useState<number | null>(null);
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<ProductFormData>({
+  const { register, handleSubmit, control, setValue, watch, formState: { errors } } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: { price: 0 },
   });
@@ -73,6 +81,17 @@ export default function CreateProductPage() {
       api.get("/sizes").then((res) => res.data.data.sizes ?? []),
   });
 
+  const { data: nextSku } = useQuery({
+    queryKey: ["next-sku"],
+    queryFn: () => api.get("/products/next-sku").then((res) => res.data.data.sku as string),
+  });
+
+  useEffect(() => {
+    if (nextSku) {
+      setValue("sku", nextSku);
+    }
+  }, [nextSku, setValue]);
+
   const createSizeMutation = useMutation({
     mutationFn: (data: { label: string; pk: string; eu: string; us: string }) =>
       api.post("/sizes", data),
@@ -86,20 +105,6 @@ export default function CreateProductPage() {
       toast.error(err?.response?.data?.message || "Failed to create size");
     },
   });
-
-
-  // Auto-generate the next sequential SKU (e.g. 44 products -> SKU-45)
-  const { data: productCount } = useQuery({
-    queryKey: ["products-count"],
-    queryFn: () =>
-      api.get("/products?limit=1").then((res) => res.data.data.pagination.total as number),
-  });
-
-  useEffect(() => {
-    if (typeof productCount === "number") {
-      setValue("sku", `SKU-${productCount + 1}`);
-    }
-  }, [productCount, setValue]);
 
   const createProductMutation = useMutation({
     mutationFn: (formData: FormData) =>
@@ -120,12 +125,24 @@ export default function CreateProductPage() {
     createProductMutation.mutate((() => {
       const fd = new FormData();
       Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && value !== "" && value !== null) fd.append(key, String(value));
+        // Meta fields are appended explicitly below so empty values still
+        // reach the backend and are stored as "".
+        if (key === "metaTitle" || key === "metaDescription") return;
+        if (value !== undefined && value !== "" && value !== null) {
+          // Send arrays as JSON strings (like variants, specifications)
+          if (Array.isArray(value)) {
+            fd.append(key, JSON.stringify(value));
+          } else {
+            fd.append(key, String(value));
+          }
+        }
       });
       // Product price is the same for every variant — apply it to each variant
       fd.append("variants", JSON.stringify(variants.map((v) => ({ ...v, price: data.price }))));
       fd.append("specifications", JSON.stringify(specs));
       if (altText) fd.append("altText", altText);
+      fd.append("metaTitle", data.metaTitle || "");
+      fd.append("metaDescription", data.metaDescription || "");
       newImages.forEach((file) => fd.append("images", file));
       return fd;
     })());
@@ -218,12 +235,24 @@ export default function CreateProductPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
-                  <Textarea id="description" rows={6} {...register("description")} />
+                  <Controller
+                    control={control}
+                    name="description"
+                    render={({ field }) => (
+                      <RichTextEditor value={field.value || ""} onChange={field.onChange} minHeight={180} />
+                    )}
+                  />
                   {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="shortDescription">Short Description</Label>
-                  <Input id="shortDescription" {...register("shortDescription")} placeholder="One-line highlight shown under the product name" />
+                  <Controller
+                    control={control}
+                    name="shortDescription"
+                    render={({ field }) => (
+                      <RichTextEditor value={field.value || ""} onChange={field.onChange} minHeight={110} />
+                    )}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -310,7 +339,21 @@ export default function CreateProductPage() {
             <Card>
               <CardHeader><CardTitle>Organization</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2"><Label>Category</Label><select className="w-full border rounded-md p-2" {...register("categoryId")}><option value="">Select category</option>{categories?.map((c: any) => <option key={c._id} value={c._id}>{c.name}</option>)}</select>{errors.categoryId && <p className="text-sm text-destructive">{errors.categoryId.message}</p>}</div>
+                <Controller
+                  control={control}
+                  name="categoriesId"
+                  rules={{ required: "At least one category is required" }}
+                  render={({ field }) => (
+                    <MultiSelect
+                      options={categories?.map((c: any) => ({ value: c._id, label: c.name })) || []}
+                      value={field.value || []}
+                      onChange={field.onChange}
+                      placeholder="Select categories"
+                      label="Categories"
+                      error={errors.categoriesId?.message}
+                    />
+                  )}
+                />
               </CardContent>
             </Card>
 
@@ -360,6 +403,32 @@ export default function CreateProductPage() {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle>SEO</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Meta Title</Label>
+                  <Input
+                    placeholder="Enter meta title (max 60 characters)"
+                    maxLength={60}
+                    {...register("metaTitle")}
+                  />
+                  {errors.metaTitle && <p className="text-sm text-destructive">{errors.metaTitle.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Meta Description</Label>
+                  <textarea
+                    placeholder="Enter meta description (max 160 characters)"
+                    maxLength={160}
+                    rows={3}
+                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    {...register("metaDescription")}
+                  />
+                  {errors.metaDescription && <p className="text-sm text-destructive">{errors.metaDescription.message}</p>}
+                </div>
               </CardContent>
             </Card>
 

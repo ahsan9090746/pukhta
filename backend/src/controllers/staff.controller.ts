@@ -4,6 +4,7 @@ import { Role } from '../models/role.model';
 import { NotFoundError, ConflictError, BadRequestError } from '../utils/AppError';
 import { catchAsync } from '../utils/catchAsync';
 import { parsePagination, parseSort, buildPaginationResponse } from '../utils/pagination';
+import { NOT_DELETED, softDeleteFields } from '../utils/softDelete';
 import bcrypt from 'bcryptjs';
 
 export class StaffController {
@@ -13,6 +14,7 @@ export class StaffController {
 
     const filter: Record<string, any> = {
       role: { $in: ['admin', 'staff'] },
+      ...NOT_DELETED,
     };
 
     if (req.query.role) filter.role = req.query.role;
@@ -46,7 +48,10 @@ export class StaffController {
   static create = catchAsync(async (req: Request, res: Response) => {
     const { name, email, password, role, phone } = req.body;
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({
+      email: String(email || '').trim().toLowerCase(),
+      ...NOT_DELETED,
+    });
     if (existingUser) {
       throw new ConflictError('Email already registered');
     }
@@ -84,6 +89,7 @@ export class StaffController {
     const staff = await User.findOne({
       _id: req.params.id,
       role: { $in: ['admin', 'staff'] },
+      ...NOT_DELETED,
     }).select('-password -refreshToken');
 
     if (!staff) {
@@ -111,7 +117,7 @@ export class StaffController {
     }
 
     const staff = await User.findOneAndUpdate(
-      { _id: req.params.id, role: { $in: ['admin', 'staff'] } },
+      { _id: req.params.id, role: { $in: ['admin', 'staff'] }, ...NOT_DELETED },
       updates,
       { new: true, runValidators: true }
     ).select('-password -refreshToken');
@@ -131,6 +137,7 @@ export class StaffController {
     const staff = await User.findOne({
       _id: req.params.id,
       role: { $in: ['admin', 'staff'] },
+      ...NOT_DELETED,
     });
 
     if (!staff) {
@@ -141,7 +148,10 @@ export class StaffController {
       throw new BadRequestError('Cannot delete super admin');
     }
 
-    await User.findByIdAndDelete(req.params.id);
+    // Soft delete: kept for audit/history, but the account can no longer log in.
+    await User.findByIdAndUpdate(staff._id, {
+      $set: softDeleteFields({ isActive: false, refreshToken: undefined }),
+    });
 
     res.status(200).json({
       success: true,
@@ -155,6 +165,7 @@ export class StaffController {
     const staff = await User.findOne({
       _id: req.params.id,
       role: { $in: ['admin', 'staff'] },
+      ...NOT_DELETED,
     });
 
     if (!staff) {

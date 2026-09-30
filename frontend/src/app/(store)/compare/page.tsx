@@ -11,6 +11,7 @@ import { GitCompareArrows, X, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { getImageUrl } from "@/lib/utils";
+import { richTextToPlainText } from "@/lib/rich-text";
 
 export default function ComparePage() {
   const { data: compareProducts, isLoading } = useQuery({
@@ -37,7 +38,7 @@ export default function ComparePage() {
           description="Add products to compare their features side by side."
           action={
             <Button asChild>
-              <Link href="/products">Browse Products</Link>
+              <Link href="/product-category">Browse Products</Link>
             </Button>
           }
         />
@@ -81,7 +82,7 @@ export default function ComparePage() {
                       Rs {product.price.toLocaleString()}
                     </p>
                     <Button size="sm" className="mt-2 w-full" asChild>
-                      <Link href={`/products/${product.slug}`}>
+                      <Link href={`/product/${product.slug}`}>
                         <ShoppingCart className="h-4 w-4 mr-1" />
                         View
                       </Link>
@@ -105,7 +106,7 @@ export default function ComparePage() {
                 {compareProducts.map((product: any) => (
                   <td key={product._id} className="p-4 border-b text-center">
                       {row.field === "category"
-                        ? product.category?.name
+                        ? product.categories?.map((c: any) => c.name).join(", ") || "-"
                       : row.field === "rating"
                       ? `${product.rating || 0} / 5`
                       : row.field === "stock"
@@ -134,7 +135,7 @@ export default function ComparePage() {
                   key={product._id}
                   className="p-4 border-b text-center text-sm"
                 >
-                  {product.description?.substring(0, 100)}...
+                  {richTextToPlainText(product.description).substring(0, 100)}...
                 </td>
               ))}
             </tr>

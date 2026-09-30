@@ -12,13 +12,25 @@ export interface Product {
   images: string[];
   sizes?: string[];
   colors?: string[];
-  category: Category;
+  categories: Category[];
+  category?: Category;
   variants: Variant[];
   specifications: Specification[];
   rating: number;
   reviewCount: number;
   sold: number;
   featured: boolean;
+  isNewArrival: boolean;
+  metaTitle?: string;
+  metaDescription?: string;
+  textStyling?: {
+    titleFontSize?: string;
+    titleFontWeight?: string;
+    titleStyle?: string;
+    descFontSize?: string;
+    descFontWeight?: string;
+    descStyle?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -46,9 +58,21 @@ export interface Category {
   slug: string;
   description?: string;
   image?: string;
+  metaTitle?: string;
+  metaDescription?: string;
   parent?: Category;
   subcategories?: Category[];
+  /** Nested tree returned by GET /categories/tree (parent → child → sub) */
+  children?: Category[];
   productCount?: number;
+  /** Active-only product count (what the storefront listing actually shows) */
+  activeProductCount?: number;
+  /** 0 = Parent, 1 = Child, 2 = Sub-category */
+  level?: number;
+  /** Full ancestor chain (root → … → direct parent), populated on product reads */
+  ancestors?: Category[];
+  /** Featured on the home page "Shop by Category" section (admin-selected) */
+  showOnHome?: boolean;
 }
 
 export interface User {
@@ -105,6 +129,8 @@ export interface Review {
   _id: string;
   user: User;
   product: Product;
+  /** Bulk fake reviews: every product the single review row applies to */
+  products?: Product[];
   rating: number;
   title?: string;
   comment: string;
@@ -115,12 +141,22 @@ export interface Review {
 
 export interface Banner {
   _id: string;
+  /** Internal label — never rendered over the artwork on the storefront */
   title: string;
   subtitle?: string;
+  /** Desktop / large-screen artwork */
   image: string;
+  /** Mobile artwork — the storefront falls back to `image` when empty */
+  mobileImage?: string;
+  /** SEO / accessibility text for the artwork */
+  altText?: string;
   link?: string;
-  order: number;
-  active: boolean;
+  linkType?: "url" | "product" | "categories";
+  /** Banners only live in the homepage hero slider */
+  position?: "hero";
+  /** 1-based, unique hero position */
+  sortOrder: number;
+  isActive: boolean;
 }
 
 export interface Coupon {
@@ -141,4 +177,36 @@ export interface Notification {
   message: string;
   read: boolean;
   createdAt: string;
+}
+
+export interface Settings {
+  _id: string;
+  storeName: string;
+  storeDescription: string;
+  storeEmail: string;
+  storePhone: string;
+  storeAddress: string;
+  storeLogo: string;
+  /** Logo shown in light mode (falls back to `storeLogo`) */
+  logoLight?: string;
+  /** Logo shown in dark mode (falls back to `storeLogo`) */
+  logoDark?: string;
+  currency: string;
+  freeShippingThreshold: number;
+  shippingCost: number;
+  socialMedia: {
+    facebook: string;
+    instagram: string;
+    twitter: string;
+    youtube: string;
+    pinterest: string;
+    linkedin: string;
+    whatsapp: string;
+    tiktok: string;
+  };
+  seo: {
+    metaTitle: string;
+    metaDescription: string;
+    keywords: string[];
+  };
 }

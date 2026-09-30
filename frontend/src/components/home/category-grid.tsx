@@ -21,12 +21,11 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
   const [paused, setPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
-  // Responsive items-per-view (1 mobile / 2 tablet / 3 laptop / 4 desktop)
+  // Responsive items-per-view (2 on phones/tablets — a swipeable pair — then 3 / 4)
   useEffect(() => {
     const compute = () => {
       const w = window.innerWidth;
-      if (w < 640) setPerView(1);
-      else if (w < 1024) setPerView(2);
+      if (w < 1024) setPerView(2);
       else if (w < 1280) setPerView(3);
       else setPerView(4);
     };
@@ -87,7 +86,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
       <button
         onClick={prev}
         aria-label="Previous category"
-        className="absolute -left-3 md:-left-5 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-background/95 border shadow-md flex items-center justify-center text-foreground/70 hover:text-gold-dark hover:border-gold hover:shadow-gold transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+        className="absolute -left-3 md:-left-5 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-background/95 border shadow-md flex items-center justify-center text-foreground/70 hover:text-brand-gold hover:border-brand-gold hover:shadow-gold transition-all disabled:opacity-30 disabled:cursor-not-allowed"
         disabled={index === 0}
       >
         <ChevronLeft className="h-5 w-5" />
@@ -95,7 +94,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
       <button
         onClick={next}
         aria-label="Next category"
-        className="absolute -right-3 md:-right-5 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-background/95 border shadow-md flex items-center justify-center text-foreground/70 hover:text-gold-dark hover:border-gold hover:shadow-gold transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+        className="absolute -right-3 md:-right-5 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-background/95 border shadow-md flex items-center justify-center text-foreground/70 hover:text-brand-gold hover:border-brand-gold hover:shadow-gold transition-all disabled:opacity-30 disabled:cursor-not-allowed"
         disabled={index >= maxIndex}
       >
         <ChevronRight className="h-5 w-5" />
@@ -121,30 +120,30 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                 transition={{ delay: (i % perView) * 0.08, duration: 0.5 }}
               >
                 <Link
-                  href={`/categories/${category.slug}`}
-                  className="group relative block aspect-[4/5] rounded-2xl overflow-hidden bg-muted ring-1 ring-black/5 hover:ring-2 hover:ring-gold shadow-sm hover:shadow-gold transition-all duration-500"
+                  href={`/product-category/${category.slug}`}
+                  className="group relative block aspect-[4/5] rounded-2xl overflow-hidden bg-muted ring-1 ring-black/5 hover:ring-2 hover:ring-brand-gold shadow-sm hover:shadow-gold transition-all duration-500"
                 >
                   {category.image ? (
                     <Image
                       src={getImageUrl(category.image)}
                       alt={category.name}
                       fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
                       className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-muted to-muted-foreground/20" />
                   )}
 
-                  {/* Premium gradient reveal on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  {/* Gradient — phones show the artwork only, reveal on hover from sm up */}
+                  <div className="absolute inset-0 hidden bg-gradient-to-t from-black/75 via-black/10 to-transparent opacity-100 transition-opacity duration-500 sm:block sm:opacity-0 sm:group-hover:opacity-100" />
 
-                  {/* Name + CTA slide-up on hover */}
-                  <div className="absolute inset-x-0 bottom-0 p-5 translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out">
-                    <p className="text-white font-semibold text-lg leading-snug line-clamp-2">
+                  {/* Name + CTA — phones keep the card image-only; slide-up on hover from sm up */}
+                  <div className="absolute inset-x-0 bottom-0 hidden p-3.5 translate-y-0 opacity-100 transition-all duration-500 ease-out sm:block sm:p-5 sm:translate-y-8 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100">
+                    <p className="text-white font-semibold text-sm leading-snug line-clamp-2 sm:text-lg">
                       {category.name}
                     </p>
-                    <span className="mt-1.5 inline-flex items-center gap-1.5 text-gold font-medium text-sm tracking-wide">
+                    <span className="mt-1 inline-flex items-center gap-1.5 text-brand-gold font-medium text-xs tracking-wide sm:mt-1.5 sm:text-sm">
                       Shop Now
                       <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                     </span>
@@ -166,7 +165,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
               aria-label={`Go to slide ${i + 1}`}
               className={`h-2 rounded-full transition-all duration-300 ${
                 i === index
-                  ? "w-7 bg-gold"
+                  ? "w-7 bg-brand-gold"
                   : "w-2 bg-foreground/20 hover:bg-foreground/40"
               }`}
             />

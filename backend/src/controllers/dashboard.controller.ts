@@ -2,7 +2,9 @@ import { Request, Response } from 'express';
 import { Order } from '../models/order.model';
 import { User } from '../models/user.model';
 import { Product } from '../models/product.model';
+import { SiteVisit } from '../models/site-visit.model';
 import { catchAsync } from '../utils/catchAsync';
+import { NOT_DELETED } from '../utils/softDelete';
 
 export class DashboardController {
   static getStats = catchAsync(async (req: Request, res: Response) => {
@@ -10,6 +12,9 @@ export class DashboardController {
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const startOfYesterday = new Date(startOfDay);
+    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
     const [
       totalOrders,
@@ -23,6 +28,12 @@ export class DashboardController {
       totalProducts,
       pendingOrders,
       lowStockProducts,
+      visitorsToday,
+      visitorsYesterday,
+      pageViewsToday,
+      onlineNow,
+      ordersYesterday,
+      revenueYesterday,
     ] = await Promise.all([
       Order.countDocuments(),
       Order.countDocuments({ createdAt: { $gte: startOfDay } }),
@@ -39,18 +50,36 @@ export class DashboardController {
         { $match: { paymentStatus: 'paid', createdAt: { $gte: startOfMonth } } },
         { $group: { _id: null, total: { $sum: '$total' } } },
       ]),
-      User.countDocuments(),
-      User.countDocuments({ createdAt: { $gte: startOfDay } }),
-      Product.countDocuments(),
+      User.countDocuments({ ...NOT_DELETED }),
+      User.countDocuments({ createdAt: { $gte: startOfDay }, ...NOT_DELETED }),
+      Product.countDocuments({ ...NOT_DELETED }),
       Order.countDocuments({ orderStatus: 'pending' }),
+      // Optimized low stock query using $size on variants array instead of $expr
       Product.countDocuments({
-        $expr: {
-          $lt: [
-            { $sum: '$variants.stock' },
-            10,
-          ],
-        },
+        ...NOT_DELETED,
+        $or: [
+          { variants: { $size: 0 }, stock: { $lt: 10 } },
+          { variants: { $elemMatch: { stock: { $lt: 10 } } } },
+        ],
       }),
+      SiteVisit.distinct('visitorId', { createdAt: { $gte: startOfDay } }),
+      SiteVisit.distinct('visitorId', {
+        createdAt: { $gte: startOfYesterday, $lt: startOfDay },
+      }),
+      SiteVisit.countDocuments({ type: 'page_view', createdAt: { $gte: startOfDay } }),
+      SiteVisit.distinct('visitorId', { createdAt: { $gte: fiveMinutesAgo } }),
+      Order.countDocuments({
+        createdAt: { $gte: startOfYesterday, $lt: startOfDay },
+      }),
+      Order.aggregate([
+        {
+          $match: {
+            paymentStatus: 'paid',
+            createdAt: { $gte: startOfYesterday, $lt: startOfDay },
+          },
+        },
+        { $group: { _id: null, total: { $sum: '$total' } } },
+      ]),
     ]);
 
     res.status(200).json({
@@ -59,12 +88,14 @@ export class DashboardController {
         orders: {
           total: totalOrders,
           today: ordersToday,
+          yesterday: ordersYesterday,
           thisMonth: ordersThisMonth,
           pending: pendingOrders,
         },
         revenue: {
           total: totalRevenue[0]?.total || 0,
           today: revenueToday[0]?.total || 0,
+          yesterday: revenueYesterday[0]?.total || 0,
           thisMonth: revenueThisMonth[0]?.total || 0,
         },
         users: {
@@ -74,6 +105,12 @@ export class DashboardController {
         products: {
           total: totalProducts,
           lowStock: lowStockProducts,
+        },
+        visitors: {
+          today: visitorsToday.length,
+          yesterday: visitorsYesterday.length,
+          pageViewsToday,
+          onlineNow: onlineNow.length,
         },
       },
     });

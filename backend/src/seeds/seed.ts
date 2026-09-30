@@ -42,8 +42,6 @@ interface SeedProduct {
   compareAtPrice: number;
   costPrice: number;
   isFeatured: boolean;
-  seoTitle: string;
-  seoDescription: string;
 }
 
 const productData: SeedProduct[] = [
@@ -55,8 +53,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 0,
     tags: ['running', 'air max', 'nike', 'casual'],
     price: 18000, compareAtPrice: 20400, costPrice: 6600, isFeatured: true,
-    seoTitle: 'Nike Air Max Pulse Running Shoes | Premium Comfort',
-    seoDescription: 'Shop Nike Air Max Pulse with visible Air cushioning and lightweight design.',
   },
   {
     name: 'Ultraboost Light',
@@ -65,8 +61,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 0,
     tags: ['running', 'ultraboost', 'adidas', 'premium'],
     price: 22800, compareAtPrice: 26400, costPrice: 7800, isFeatured: true,
-    seoTitle: 'Adidas Ultraboost Light Running Shoes | Top Performance',
-    seoDescription: 'Experience ultimate comfort with Adidas Ultraboost Light featuring Light BOOST technology.',
   },
   {
     name: 'FuelCell Rebel v4',
@@ -75,8 +69,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 0,
     tags: ['running', 'fuelcell', 'new balance', 'training'],
     price: 16800, compareAtPrice: 19200, costPrice: 5750, isFeatured: false,
-    seoTitle: 'New Balance FuelCell Rebel v4 | Responsive Running',
-    seoDescription: 'Fuel your runs with New Balance FuelCell Rebel v4.',
   },
   {
     name: 'RS-X³ Puzzle',
@@ -85,8 +77,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 0,
     tags: ['running', 'retro', 'puma', 'chunky'],
     price: 14400, compareAtPrice: 16800, costPrice: 5050, isFeatured: false,
-    seoTitle: 'Puma RS-X³ Puzzle Shoes | Bold Style',
-    seoDescription: 'Stand out with Puma RS-X³ Puzzle featuring RS cushioning technology.',
   },
   {
     name: 'Nano X3',
@@ -95,8 +85,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 0,
     tags: ['running', 'cross-training', 'reebok', 'gym'],
     price: 15600, compareAtPrice: 18000, costPrice: 5400, isFeatured: false,
-    seoTitle: 'Reebok Nano X3 | Cross-Training Excellence',
-    seoDescription: 'Dominate your workouts with Reebok Nano X3.',
   },
   // Casual Shoes
   {
@@ -106,8 +94,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 1,
     tags: ['casual', 'leather', 'adidas', 'classic'],
     price: 10800, compareAtPrice: 12000, costPrice: 3600, isFeatured: true,
-    seoTitle: 'Adidas Classic Leather Sneakers | Timeless Style',
-    seoDescription: 'Shop Adidas Classic Leather - a timeless casual sneaker.',
   },
   {
     name: 'Court Vision Low',
@@ -116,8 +102,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 1,
     tags: ['casual', 'court', 'nike', 'leather'],
     price: 7800, compareAtPrice: 9000, costPrice: 2650, isFeatured: false,
-    seoTitle: 'Nike Court Vision Low | Clean Court Style',
-    seoDescription: 'Get classic court style with Nike Court Vision Low.',
   },
   {
     name: 'Suede Classic XXI',
@@ -126,8 +110,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 1,
     tags: ['casual', 'suede', 'puma', 'heritage'],
     price: 9000, compareAtPrice: 10200, costPrice: 3100, isFeatured: false,
-    seoTitle: 'Puma Suede Classic XXI | Heritage Style',
-    seoDescription: 'Own the streets with Puma Suede Classic XXI.',
   },
   {
     name: 'Club C 85',
@@ -136,8 +118,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 1,
     tags: ['casual', 'retro', 'reebok', 'leather'],
     price: 9600, compareAtPrice: 10800, costPrice: 3350, isFeatured: false,
-    seoTitle: 'Reebok Club C 85 | Retro Casual Sneakers',
-    seoDescription: 'Step into retro style with Reebok Club C 85.',
   },
   // Formal Shoes
   {
@@ -147,8 +127,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 2,
     tags: ['formal', 'oxford', 'leather', 'premium'],
     price: 24000, compareAtPrice: 30000, costPrice: 8400, isFeatured: true,
-    seoTitle: 'Premium Oxford Wing Tip Shoes | Formal Elegance',
-    seoDescription: 'Elevate your formal wear with premium Oxford Wing Tip shoes.',
   },
   {
     name: 'Classic Derby',
@@ -157,8 +135,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 2,
     tags: ['formal', 'derby', 'leather', 'business'],
     price: 21600, compareAtPrice: 26400, costPrice: 7450, isFeatured: false,
-    seoTitle: 'Classic Derby Leather Shoes | Business Ready',
-    seoDescription: 'Make a statement with Classic Derby leather shoes.',
   },
   {
     name: 'Monk Strap',
@@ -167,8 +143,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 2,
     tags: ['formal', 'monk', 'suede', 'elegant'],
     price: 22800, compareAtPrice: 27600, costPrice: 8150, isFeatured: false,
-    seoTitle: 'Monk Strap Suede Shoes | Sophisticated Style',
-    seoDescription: 'Refine your look with Monk Strap suede shoes.',
   },
   // Sports Shoes
   {
@@ -178,8 +152,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 3,
     tags: ['sports', 'basketball', 'nike', 'lebron'],
     price: 24000, compareAtPrice: 26400, costPrice: 8650, isFeatured: true,
-    seoTitle: 'Nike LeBron XXI Basketball Shoes | Court Dominance',
-    seoDescription: 'Dominate the court with Nike LeBron XXI.',
   },
   {
     name: 'Predator Edge',
@@ -188,8 +160,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 3,
     tags: ['sports', 'football', 'adidas', 'predator'],
     price: 20400, compareAtPrice: 24000, costPrice: 6950, isFeatured: false,
-    seoTitle: 'Adidas Predator Edge Football Boots | Ball Control',
-    seoDescription: 'Control the game with Adidas Predator Edge football boots.',
   },
   {
     name: 'PUMA Future Ultimate',
@@ -198,8 +168,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 3,
     tags: ['sports', 'football', 'puma', 'speed'],
     price: 19200, compareAtPrice: 22800, costPrice: 6500, isFeatured: false,
-    seoTitle: 'PUMA Future Ultimate Football Boots | Speed Machine',
-    seoDescription: 'Blaze past defenders with PUMA Future Ultimate.',
   },
   {
     name: 'Royal Grand Court',
@@ -208,8 +176,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 3,
     tags: ['sports', 'tennis', 'converse', 'court'],
     price: 10800, compareAtPrice: 13200, costPrice: 3850, isFeatured: false,
-    seoTitle: 'Converse Royal Grand Court Tennis Shoes',
-    seoDescription: 'Step onto the court with Converse Royal Grand Court.',
   },
   // Sandals
   {
@@ -219,8 +185,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 4,
     tags: ['sandals', 'slides', 'nike', 'comfort'],
     price: 4800, compareAtPrice: 6000, costPrice: 1450, isFeatured: false,
-    seoTitle: 'Nike Benassi Ultra Soft Slides | Recovery Comfort',
-    seoDescription: 'Relax in comfort with Nike Benassi Ultra Soft slides.',
   },
   {
     name: 'Adilette Comfort',
@@ -229,8 +193,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 4,
     tags: ['sandals', 'slides', 'adidas', 'comfort'],
     price: 4200, compareAtPrice: 5400, costPrice: 1200, isFeatured: false,
-    seoTitle: 'Adidas Adilette Comfort Slides | Cloudfoam Comfort',
-    seoDescription: 'Step into cloud comfort with Adidas Adilette slides.',
   },
   {
     name: 'Yoga Stripe',
@@ -239,8 +201,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 4,
     tags: ['sandals', 'yoga', 'reebok', 'lightweight'],
     price: 3600, compareAtPrice: 4800, costPrice: 1100, isFeatured: false,
-    seoTitle: 'Reebok Yoga Stripe Sandals | Lightweight Comfort',
-    seoDescription: 'Flow with ease in Reebok Yoga Stripe sandals.',
   },
   // Boots
   {
@@ -250,8 +210,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 5,
     tags: ['boots', 'air force', 'nike', 'streetwear'],
     price: 14400, compareAtPrice: 16800, costPrice: 5050, isFeatured: true,
-    seoTitle: 'Nike Air Force 1 Mid Boots | Streetwear Icon',
-    seoDescription: 'Rock the streets with Nike Air Force 1 Mid.',
   },
   {
     name: 'Terrex Free Hiker',
@@ -260,8 +218,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 5,
     tags: ['boots', 'hiking', 'adidas', 'terrex'],
     price: 21600, compareAtPrice: 25200, costPrice: 7450, isFeatured: false,
-    seoTitle: 'Adidas Terrex Free Hiker | Trail Ready',
-    seoDescription: 'Hit the trails with Adidas Terrex Free Hiker boots.',
   },
   {
     name: 'Suede Classic Boot',
@@ -270,8 +226,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 5,
     tags: ['boots', 'winter', 'puma', 'suede'],
     price: 12000, compareAtPrice: 14400, costPrice: 4200, isFeatured: false,
-    seoTitle: 'Puma Suede Classic Boot | Winter Style',
-    seoDescription: 'Stay warm and stylish with Puma Suede Classic Boot.',
   },
   {
     name: 'Newton Ridge Plus',
@@ -280,8 +234,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 5,
     tags: ['boots', 'hiking', 'new balance', 'waterproof'],
     price: 18000, compareAtPrice: 21600, costPrice: 6000, isFeatured: false,
-    seoTitle: 'New Balance Newton Ridge Plus Hiking Boots',
-    seoDescription: 'Conquer any trail with New Balance Newton Ridge Plus.',
   },
   // Sneakers
   {
@@ -291,8 +243,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 6,
     tags: ['sneakers', 'jordan', 'nike', 'iconic'],
     price: 21600, compareAtPrice: 22800, costPrice: 7200, isFeatured: true,
-    seoTitle: 'Air Jordan 1 Retro High | Sneaker Legend',
-    seoDescription: 'Own the legacy with Air Jordan 1 Retro High.',
   },
   {
     name: 'Superstar',
@@ -301,8 +251,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 6,
     tags: ['sneakers', 'superstar', 'adidas', 'iconic'],
     price: 12000, compareAtPrice: 14400, costPrice: 4100, isFeatured: true,
-    seoTitle: 'Adidas Superstar Sneakers | Shell-Toe Classic',
-    seoDescription: 'Be original with Adidas Superstar shell-toe sneakers.',
   },
   {
     name: 'Chuck 70 High Top',
@@ -311,8 +259,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 6,
     tags: ['sneakers', 'converse', 'classic', 'canvas'],
     price: 10200, compareAtPrice: 11400, costPrice: 3350, isFeatured: false,
-    seoTitle: 'Converse Chuck 70 High Top | Elevated Classic',
-    seoDescription: 'Level up with Converse Chuck 70 High Top sneakers.',
   },
   {
     name: 'RS-0 Sneaker',
@@ -321,8 +267,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 6,
     tags: ['sneakers', 'puma', 'retro', 'futuristic'],
     price: 13200, compareAtPrice: 15600, costPrice: 4550, isFeatured: false,
-    seoTitle: 'Puma RS-0 Sneaker | Retro-Futuristic Style',
-    seoDescription: 'Step into the future with Puma RS-0 Sneaker.',
   },
   {
     name: 'Classic Harmony',
@@ -331,8 +275,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 6,
     tags: ['sneakers', 'reebok', 'classic', 'versatile'],
     price: 9600, compareAtPrice: 10800, costPrice: 3250, isFeatured: false,
-    seoTitle: 'Reebok Classic Harmony | Everyday Style',
-    seoDescription: 'Stay classic with Reebok Classic Harmony sneakers.',
   },
   // Loafers
   {
@@ -342,8 +284,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 7,
     tags: ['loafers', 'penny', 'leather', 'classic'],
     price: 20400, compareAtPrice: 24000, costPrice: 6950, isFeatured: true,
-    seoTitle: 'Classic Penny Loafer | Smart-Casual Essential',
-    seoDescription: 'Step into sophistication with Classic Penny Loafers.',
   },
   {
     name: 'Tassel Loafer',
@@ -352,8 +292,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 7,
     tags: ['loafers', 'tassel', 'suede', 'elegant'],
     price: 19200, compareAtPrice: 22800, costPrice: 6500, isFeatured: false,
-    seoTitle: 'Tassel Loafer Suede Shoes | Elegant Detail',
-    seoDescription: 'Add flair to your outfit with Tassel Loafers.',
   },
   {
     name: 'Horsebit Loafer',
@@ -362,8 +300,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 7,
     tags: ['loafers', 'horsebit', 'luxury', 'italian'],
     price: 24000, compareAtPrice: 28800, costPrice: 8400, isFeatured: false,
-    seoTitle: 'Horsebit Loafer | Italian Luxury',
-    seoDescription: 'Luxury in every step with Horsebit Loafers.',
   },
   {
     name: 'Moccasin Loafer',
@@ -372,8 +308,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 7,
     tags: ['loafers', 'moccasin', 'handmade', 'comfort'],
     price: 15600, compareAtPrice: 18000, costPrice: 5300, isFeatured: false,
-    seoTitle: 'Moccasin Loafer | Handcrafted Comfort',
-    seoDescription: 'Experience handcrafted comfort with Moccasin Loafers.',
   },
   {
     name: 'Platform Loafer',
@@ -382,8 +316,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 7,
     tags: ['loafers', 'platform', 'modern', 'fashion'],
     price: 16800, compareAtPrice: 20400, costPrice: 5750, isFeatured: false,
-    seoTitle: 'Platform Loafer | Bold Modern Style',
-    seoDescription: 'Make a statement with Platform Loafers.',
   },
   // Extra products to fill 40+
   {
@@ -393,8 +325,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 0,
     tags: ['running', 'pegasus', 'nike', 'daily'],
     price: 14400, compareAtPrice: 15600, costPrice: 5050, isFeatured: false,
-    seoTitle: 'Nike Zoom Pegasus 40 | Daily Running Partner',
-    seoDescription: 'Run every day with Nike Zoom Pegasus 40.',
   },
   {
     name: 'Gel-Nimbus 25',
@@ -403,8 +333,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 0,
     tags: ['running', 'fresh foam', 'new balance', 'long-distance'],
     price: 19200, compareAtPrice: 21600, costPrice: 6500, isFeatured: false,
-    seoTitle: 'New Balance Fresh Foam X 1080v13 | Plush Running',
-    seoDescription: 'Float through miles with New Balance Fresh Foam X.',
   },
   {
     name: 'Ghost 15',
@@ -413,8 +341,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 0,
     tags: ['running', 'ghost', 'reebok', 'neutral'],
     price: 16800, compareAtPrice: 18000, costPrice: 5750, isFeatured: false,
-    seoTitle: 'Ghost 15 Running Shoes | Smooth Transitions',
-    seoDescription: 'Experience smooth rides with Ghost 15 running shoes.',
   },
   {
     name: 'Campus 80s',
@@ -423,8 +349,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 6,
     tags: ['sneakers', 'campus', 'adidas', 'vintage'],
     price: 10800, compareAtPrice: 13200, costPrice: 3600, isFeatured: false,
-    seoTitle: 'Adidas Campus 80s | Vintage Streetwear',
-    seoDescription: 'Go vintage with Adidas Campus 80s sneakers.',
   },
   {
     name: 'Mach 1000',
@@ -433,8 +357,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 3,
     tags: ['sports', 'speed', 'puma', 'athletic'],
     price: 15600, compareAtPrice: 18000, costPrice: 5300, isFeatured: false,
-    seoTitle: 'Puma Mach 1000 | Speed Performance',
-    seoDescription: 'Break records with Puma Mach 1000.',
   },
   {
     name: 'Low Top Classic',
@@ -443,8 +365,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 6,
     tags: ['sneakers', 'converse', 'classic', 'canvas'],
     price: 7200, compareAtPrice: 8400, costPrice: 2150, isFeatured: false,
-    seoTitle: 'Converse Low Top Classic | Iconic Style',
-    seoDescription: 'Be iconic with Converse Low Top Classic sneakers.',
   },
   {
     name: 'EvoStrike Pro',
@@ -453,8 +373,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 3,
     tags: ['sports', 'court', 'new balance', 'versatile'],
     price: 12000, compareAtPrice: 14400, costPrice: 4100, isFeatured: false,
-    seoTitle: 'New Balance EvoStrike Pro | Court Performance',
-    seoDescription: 'Own the court with New Balance EvoStrike Pro.',
   },
   {
     name: 'Birkenstock Boston',
@@ -463,8 +381,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 4,
     tags: ['sandals', 'clog', 'birkenstock', 'comfort'],
     price: 13200, compareAtPrice: 15600, costPrice: 4550, isFeatured: false,
-    seoTitle: 'Birkenstock Boston Clog | Cork Comfort',
-    seoDescription: 'Experience orthopedic comfort with Birkenstock Boston.',
   },
   {
     name: 'Chelsea Boot',
@@ -473,8 +389,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 5,
     tags: ['boots', 'chelsea', 'leather', 'premium'],
     price: 22800, compareAtPrice: 26400, costPrice: 7800, isFeatured: true,
-    seoTitle: 'Premium Chelsea Boot | Wardrobe Essential',
-    seoDescription: 'Elevate your style with premium Chelsea Boots.',
   },
   {
     name: 'Chukka Boot',
@@ -483,8 +397,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 5,
     tags: ['boots', 'chukka', 'suede', 'casual'],
     price: 16800, compareAtPrice: 20400, costPrice: 5750, isFeatured: false,
-    seoTitle: 'Classic Chukka Boot | Casual Elegance',
-    seoDescription: 'Step into casual elegance with Chukka Boots.',
   },
   {
     name: 'Performance Slide',
@@ -493,8 +405,6 @@ const productData: SeedProduct[] = [
     categoryIndex: 4,
     tags: ['sandals', 'slides', 'reebok', 'performance'],
     price: 3000, compareAtPrice: 4200, costPrice: 950, isFeatured: false,
-    seoTitle: 'Reebok Performance Slide | Pool Ready',
-    seoDescription: 'Slide into comfort with Reebok Performance Slide.',
   },
 ];
 
@@ -537,9 +447,12 @@ const bannerData = [
   {
     title: 'Summer Collection 2026',
     subtitle: 'Up to 40% off on selected styles',
+    // Desktop artwork (wide) + dedicated mobile artwork (portrait-ish crop)
     image: UNSPLASH('1542291026-7eec264c27ff', 1600),
     mobileImage: UNSPLASH('1542291026-7eec264c27ff', 800),
-    link: '/collections/summer',
+    altText: 'Summer Collection 2026',
+    link: '/product-category',
+    linkType: 'url' as const,
     position: 'hero' as const,
     sortOrder: 1,
   },
@@ -548,7 +461,9 @@ const bannerData = [
     subtitle: 'Fresh drops from your favorite brands',
     image: UNSPLASH('1595950653106-6c9ebd614d3a', 1600),
     mobileImage: UNSPLASH('1595950653106-6c9ebd614d3a', 800),
-    link: '/collections/new-arrivals',
+    altText: 'New Arrivals',
+    link: '/product-category/new-arrival',
+    linkType: 'url' as const,
     position: 'hero' as const,
     sortOrder: 2,
   },
@@ -557,8 +472,10 @@ const bannerData = [
     subtitle: 'Gear up for your next run',
     image: UNSPLASH('1552346154-21d32810aba3', 1600),
     mobileImage: UNSPLASH('1552346154-21d32810aba3', 800),
-    link: '/category/running-shoes',
-    position: 'middle' as const,
+    altText: 'Running Essentials',
+    link: '/product-category',
+    linkType: 'url' as const,
+    position: 'hero' as const,
     sortOrder: 3,
   },
   {
@@ -566,8 +483,10 @@ const bannerData = [
     subtitle: 'Earn double points on all purchases this week',
     image: UNSPLASH('1600185365483-26d7a4cc7519', 1600),
     mobileImage: UNSPLASH('1600185365483-26d7a4cc7519', 800),
-    link: '/account/rewards',
-    position: 'middle' as const,
+    altText: 'Member Exclusive',
+    link: '/product-category',
+    linkType: 'url' as const,
+    position: 'hero' as const,
     sortOrder: 4,
   },
   {
@@ -575,8 +494,10 @@ const bannerData = [
     subtitle: 'On orders over $100',
     image: UNSPLASH('1549298916-b41d501d3772', 1600),
     mobileImage: UNSPLASH('1549298916-b41d501d3772', 800),
-    link: '/shipping-info',
-    position: 'footer' as const,
+    altText: 'Free Shipping',
+    link: '/product-category',
+    linkType: 'url' as const,
+    position: 'hero' as const,
     sortOrder: 5,
   },
 ];
@@ -614,21 +535,17 @@ const reviewComments = [
   'Good shoes overall. Slightly narrow but true to size.',
 ];
 
-const sampleAddresses = [
-  { label: 'Home', fullName: 'John Doe', phone: '+1 (555) 100-1001', address1: '123 Main Street', address2: 'Apt 4B', city: 'New York', state: 'NY', postalCode: '10001', country: 'US', isDefault: true },
-  { label: 'Office', fullName: 'John Doe', phone: '+1 (555) 100-1002', address1: '456 Business Ave', city: 'New York', state: 'NY', postalCode: '10002', country: 'US', isDefault: false },
-];
 
 const customerAddresses = [
   [
-    { label: 'Home', fullName: 'Jane Smith', phone: '+1 (555) 200-1001', address1: '789 Oak Lane', city: 'Los Angeles', state: 'CA', postalCode: '90001', country: 'US', isDefault: true },
+    { label: 'Home', fullName: 'Jane Smith', phone: '+1 (555) 200-1001', address1: '789 Oak Lane', address2: '', city: 'Los Angeles', state: 'CA', postalCode: '90001', country: 'US', isDefault: true },
   ],
   [
-    { label: 'Home', fullName: 'Bob Johnson', phone: '+1 (555) 300-1001', address1: '321 Pine Street', city: 'Chicago', state: 'IL', postalCode: '60601', country: 'US', isDefault: true },
-    { label: 'Work', fullName: 'Bob Johnson', phone: '+1 (555) 300-1002', address1: '654 Corporate Blvd', city: 'Chicago', state: 'IL', postalCode: '60602', country: 'US', isDefault: false },
+    { label: 'Home', fullName: 'Bob Johnson', phone: '+1 (555) 300-1001', address1: '321 Pine Street', address2: '', city: 'Chicago', state: 'IL', postalCode: '60601', country: 'US', isDefault: true },
+    { label: 'Work', fullName: 'Bob Johnson', phone: '+1 (555) 300-1002', address1: '654 Corporate Blvd', address2: '', city: 'Chicago', state: 'IL', postalCode: '60602', country: 'US', isDefault: false },
   ],
   [
-    { label: 'Home', fullName: 'Alice Brown', phone: '+1 (555) 400-1001', address1: '987 Elm Drive', city: 'Houston', state: 'TX', postalCode: '77001', country: 'US', isDefault: true },
+    { label: 'Home', fullName: 'Alice Brown', phone: '+1 (555) 400-1001', address1: '987 Elm Drive', address2: '', city: 'Houston', state: 'TX', postalCode: '77001', country: 'US', isDefault: true },
   ],
 ];
 
@@ -639,21 +556,21 @@ export async function seed(): Promise<void> {
   await mongoose.connect(config.mongoUri);
   console.log('✅ Connected to MongoDB');
 
-  // Clear all collections
-  console.log('\n🗑️  Clearing existing data...');
-  await Promise.all([
-    User.deleteMany({}),
-    Role.deleteMany({}),
-    Product.deleteMany({}),
-    Category.deleteMany({}),
-    Banner.deleteMany({}),
-    Coupon.deleteMany({}),
-    Review.deleteMany({}),
-    Order.deleteMany({}),
-    Address.deleteMany({}),
-    InventoryMovement.deleteMany({}),
+  // Condition check — seed only what is missing. Existing data is never
+  // cleared or overwritten (same behaviour as size/settings/admin seeds).
+  const [existingProducts, existingCategories] = await Promise.all([
+    Product.countDocuments(),
+    Category.countDocuments(),
   ]);
-  console.log('✅ All collections cleared');
+  if (existingProducts > 0 && existingCategories > 0) {
+    console.log(
+      `✅ Already seeded — nothing to do (products=${existingProducts}, categories=${existingCategories})`
+    );
+    return;
+  }
+  console.log(
+    `🌱 Seeding missing data (products=${existingProducts}, categories=${existingCategories})...`
+  );
 
   // Create Roles
   console.log('\n📋 Creating roles...');
@@ -673,37 +590,56 @@ export async function seed(): Promise<void> {
     { name: 'manager', description: 'Manager access with analytics and staff management', permissions: allPermissions.filter(p => p !== 'settings.manage'), isSystem: true },
   ];
 
-  const createdRoles = await Role.insertMany(rolesData);
-  console.log(`✅ Created ${createdRoles.length} roles: ${createdRoles.map(r => r.name).join(', ')}`);
+  const rolesExist = (await Role.countDocuments()) > 0;
+  const createdRoles = rolesExist ? await Role.find() : await Role.insertMany(rolesData);
+  console.log(
+    rolesExist
+      ? `✅ Roles already exist (${createdRoles.length})`
+      : `✅ Created ${createdRoles.length} roles: ${createdRoles.map(r => r.name).join(', ')}`
+  );
 
   // Create Super Admin
   console.log('\n👤 Creating Super Admin...');
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@footware2.com';
   const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123456';
 
-  const superAdmin = new User({
-    name: 'Super Admin',
-    email: adminEmail,
-    password: adminPassword,
-    role: 'super-admin',
-    isVerified: true,
-    isActive: true,
-    phone: '+1 (555) 000-0001',
-    addresses: sampleAddresses,
-    preferences: { emailNotifications: true, smsNotifications: true, currency: 'PKR', language: 'en' },
+  let superAdmin: any = await User.findOne({
+    role: { $in: ['super-admin', 'admin'] },
   });
-  await superAdmin.save();
-  console.log(`✅ Created Super Admin: ${adminEmail}`);
+  if (superAdmin) {
+    console.log(`✅ Admin already exists (${superAdmin.email})`);
+  } else {
+    superAdmin = new User({
+      name: 'Super Admin',
+      email: adminEmail,
+      password: adminPassword,
+      role: 'super-admin',
+      isVerified: true,
+      isActive: true,
+      phone: '+1 (555) 000-0001',
+    });
+    await superAdmin.save();
+    console.log(`✅ Created Super Admin: ${adminEmail}`);
+  }
 
   // Create Customers
   console.log('\n👥 Creating sample customers...');
   const customersData = [
-    { name: 'Jane Smith', email: 'jane.smith@example.com', password: 'Customer@123', phone: '+1 (555) 200-0001', addresses: customerAddresses[0] },
-    { name: 'Bob Johnson', email: 'bob.johnson@example.com', password: 'Customer@123', phone: '+1 (555) 300-0001', addresses: customerAddresses[1] },
-    { name: 'Alice Brown', email: 'alice.brown@example.com', password: 'Customer@123', phone: '+1 (555) 400-0001', addresses: customerAddresses[2] },
+    { name: 'Jane Smith', email: 'jane.smith@example.com', password: 'Customer@123', phone: '+1 (555) 200-0001', },
+    { name: 'Bob Johnson', email: 'bob.johnson@example.com', password: 'Customer@123', phone: '+1 (555) 300-0001', },
+    { name: 'Alice Brown', email: 'alice.brown@example.com', password: 'Customer@123', phone: '+1 (555) 400-0001', },
   ];
 
-  const customers: InstanceType<typeof User>[] = [];
+  // Email -> seed addresses (addresses live in their own Address collection)
+  const addressesByEmail: Record<string, typeof customerAddresses[number]> = {};
+  customersData.forEach((c, i) => { addressesByEmail[c.email] = customerAddresses[i]; });
+  let customers: InstanceType<typeof User>[] = await User.find({
+    email: { $in: customersData.map((c) => c.email) },
+  });
+  if (customers.length > 0) {
+    console.log(`✅ Customers already exist (${customers.length})`);
+  } else {
+  customers = [];
   for (const c of customersData) {
     const customer = new User({
       name: c.name,
@@ -713,19 +649,22 @@ export async function seed(): Promise<void> {
       isVerified: true,
       isActive: true,
       phone: c.phone,
-      addresses: c.addresses,
-      preferences: { emailNotifications: true, smsNotifications: false, currency: 'PKR', language: 'en' },
     });
     await customer.save();
     customers.push(customer);
   }
   console.log(`✅ Created ${customers.length} customers`);
+  }
 
   // Create Addresses
   console.log('\n📍 Creating addresses...');
+  const existingAddressCount = await Address.countDocuments();
   const addressDocs: InstanceType<typeof Address>[] = [];
+  if (existingAddressCount > 0) {
+    console.log(`✅ Addresses already exist (${existingAddressCount})`);
+  } else {
   for (const cust of customers) {
-    for (const addr of (cust.addresses || [])) {
+    for (const addr of (addressesByEmail[cust.email] || [])) {
       const addressDoc = new Address({
         user: cust._id,
         label: addr.label,
@@ -744,10 +683,14 @@ export async function seed(): Promise<void> {
     }
   }
   console.log(`✅ Created ${addressDocs.length} addresses`);
+  }
 
   // Create Categories
   console.log('\n📂 Creating categories...');
-  const createdCategories = [];
+  let createdCategories: InstanceType<typeof Category>[] = await Category.find();
+  if (createdCategories.length > 0) {
+    console.log(`✅ Categories already exist (${createdCategories.length})`);
+  } else {
   for (let i = 0; i < categories.length; i++) {
     const cat = new Category({
       name: categories[i].name,
@@ -760,10 +703,14 @@ export async function seed(): Promise<void> {
     createdCategories.push(cat);
   }
   console.log(`✅ Created ${createdCategories.length} categories`);
+  }
 
   // Create Products
   console.log('\n👟 Creating products...');
-  const createdProducts: any[] = [];
+  let createdProducts: any[] = await Product.find();
+  if (createdProducts.length > 0) {
+    console.log(`✅ Products already exist (${createdProducts.length})`);
+  } else {
   for (const pd of productData) {
     const category = createdCategories[pd.categoryIndex];
 
@@ -810,18 +757,20 @@ export async function seed(): Promise<void> {
       colors: productColors,
       isActive: true,
       isFeatured: pd.isFeatured,
-      weight: randomInt(500, 1500),
-      seoTitle: pd.seoTitle,
-      seoDescription: pd.seoDescription,
     });
     await product.save();
     createdProducts.push(product);
   }
   console.log(`✅ Created ${createdProducts.length} products`);
+  }
 
   // Create Banners
   console.log('\n🖼️  Creating banners...');
-  const createdBanners = [];
+  const existingBanners = await Banner.countDocuments();
+  const createdBanners: any[] = [];
+  if (existingBanners > 0) {
+    console.log(`✅ Banners already exist (${existingBanners})`);
+  } else {
   for (const bd of bannerData) {
     const banner = new Banner({
       ...bd,
@@ -833,10 +782,15 @@ export async function seed(): Promise<void> {
     createdBanners.push(banner);
   }
   console.log(`✅ Created ${createdBanners.length} banners`);
+  }
 
   // Create Coupons
   console.log('\n🎫 Creating coupons...');
-  const createdCoupons = [];
+  const existingCoupons = await Coupon.countDocuments();
+  const createdCoupons: any[] = [];
+  if (existingCoupons > 0) {
+    console.log(`✅ Coupons already exist (${existingCoupons})`);
+  } else {
   for (const cd of couponData) {
     const coupon = new Coupon({
       ...cd,
@@ -847,11 +801,22 @@ export async function seed(): Promise<void> {
     createdCoupons.push(coupon);
   }
   console.log(`✅ Created ${createdCoupons.length} coupons`);
+  }
 
   // Create Reviews
   console.log('\n⭐ Creating reviews...');
-  const createdReviews = [];
+  const existingReviewCount = await Review.countDocuments();
+  const createdReviews: any[] = [];
   const reviewProducts = createdProducts.slice(0, 20);
+  const skipReviews =
+    existingReviewCount > 0 ||
+    customers.length === 0 ||
+    reviewProducts.length === 0;
+  if (skipReviews) {
+    console.log(
+      `✅ Reviews skipped (existing=${existingReviewCount}, customers=${customers.length}, products=${reviewProducts.length})`
+    );
+  } else {
   for (let i = 0; i < reviewProducts.length; i++) {
     const review = new Review({
       user: customers[i % customers.length]._id,
@@ -867,6 +832,7 @@ export async function seed(): Promise<void> {
     createdReviews.push(review);
   }
   console.log(`✅ Created ${createdReviews.length} reviews`);
+  }
 
   // Create Orders
   console.log('\n📦 Creating orders...');
@@ -879,7 +845,15 @@ export async function seed(): Promise<void> {
     { orderStatus: 'cancelled', paymentStatus: 'refunded' },
   ];
 
-  const createdOrders = [];
+  const existingOrderCount = await Order.countDocuments();
+  const createdOrders: any[] = [];
+  const skipOrders =
+    existingOrderCount > 0 ||
+    customers.length === 0 ||
+    createdProducts.length === 0;
+  if (skipOrders) {
+    console.log(`✅ Orders skipped (existing=${existingOrderCount})`);
+  } else {
   for (let i = 0; i < 10; i++) {
     const customer = customers[i % customers.length];
     const numItems = randomInt(1, 4);
@@ -904,16 +878,16 @@ export async function seed(): Promise<void> {
     const shipping = 0; // Free shipping on all orders
     const statusIdx = i % orderStatuses.length;
 
-    const shippingAddr = customer.addresses && customer.addresses.length > 0
+    const shippingAddr = addressesByEmail[customer.email] && addressesByEmail[customer.email].length > 0
       ? {
-          fullName: customer.addresses[0].fullName,
-          phone: customer.addresses[0].phone,
-          address1: customer.addresses[0].address1,
-          address2: customer.addresses[0].address2 || '',
-          city: customer.addresses[0].city,
-          state: customer.addresses[0].state,
-          postalCode: customer.addresses[0].postalCode,
-          country: customer.addresses[0].country,
+          fullName: addressesByEmail[customer.email][0].fullName,
+          phone: addressesByEmail[customer.email][0].phone,
+          address1: addressesByEmail[customer.email][0].address1,
+          address2: addressesByEmail[customer.email][0].address2 || '',
+          city: addressesByEmail[customer.email][0].city,
+          state: addressesByEmail[customer.email][0].state,
+          postalCode: addressesByEmail[customer.email][0].postalCode,
+          country: addressesByEmail[customer.email][0].country,
         }
       : {
           fullName: customer.name,
@@ -945,11 +919,17 @@ export async function seed(): Promise<void> {
     createdOrders.push(order);
   }
   console.log(`✅ Created ${createdOrders.length} orders`);
+  }
 
   // Create Inventory Movements
   console.log('\n📊 Creating inventory movements...');
   const movementTypes: Array<'purchase' | 'adjustment' | 'sale' | 'return'> = ['purchase', 'adjustment', 'sale', 'return'];
-  const createdMovements = [];
+  const existingMovementCount = await InventoryMovement.countDocuments();
+  const createdMovements: any[] = [];
+  const skipMovements = existingMovementCount > 0 || createdProducts.length === 0;
+  if (skipMovements) {
+    console.log(`✅ Inventory movements skipped (existing=${existingMovementCount})`);
+  } else {
   for (let i = 0; i < 20; i++) {
     const product = createdProducts[i % createdProducts.length];
     const movementType = movementTypes[i % movementTypes.length];
@@ -971,6 +951,7 @@ export async function seed(): Promise<void> {
     createdMovements.push(movement);
   }
   console.log(`✅ Created ${createdMovements.length} inventory movements`);
+  }
 
   // Summary
   console.log('\n' + '='.repeat(50));

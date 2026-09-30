@@ -3,11 +3,12 @@ import { User, IUser } from '../models/user.model';
 import { AppError, NotFoundError, UnauthorizedError, ConflictError, BadRequestError, ForbiddenError } from '../utils/AppError';
 import { generateTokens, setTokenCookies, clearTokenCookies } from '../utils/generateTokens';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/sendEmail';
+import { NOT_DELETED } from '../utils/softDelete';
 import { Response } from 'express';
 
 export class AuthService {
   static async register(data: { name: string; email: string; password: string }, res?: Response): Promise<{ user: IUser; accessToken: string; refreshToken: string }> {
-    const existingUser = await User.findOne({ email: data.email });
+    const existingUser = await User.findOne({ email: data.email, ...NOT_DELETED });
     if (existingUser) {
       throw new ConflictError('Email already registered');
     }
@@ -33,7 +34,7 @@ export class AuthService {
   }
 
   static async login(data: { email: string; password: string }, res: Response): Promise<{ user: IUser; accessToken: string; refreshToken: string }> {
-    const user = await User.findOne({ email: data.email }).select('+password');
+    const user = await User.findOne({ email: data.email, ...NOT_DELETED }).select('+password');
     if (!user) {
       throw new UnauthorizedError('Invalid email or password');
     }
@@ -50,7 +51,6 @@ export class AuthService {
     const { accessToken, refreshToken } = generateTokens(user);
 
     user.refreshToken = refreshToken;
-    user.lastLogin = new Date();
     await user.save({ validateBeforeSave: false });
 
     setTokenCookies(res, accessToken, refreshToken);
@@ -63,7 +63,7 @@ export class AuthService {
    * Role is verified BEFORE issuing tokens/cookies.
    */
   static async adminLogin(data: { email: string; password: string }, res: Response): Promise<{ user: IUser; accessToken: string; refreshToken: string }> {
-    const user = await User.findOne({ email: data.email }).select('+password');
+    const user = await User.findOne({ email: data.email, ...NOT_DELETED }).select('+password');
     if (!user) {
       throw new UnauthorizedError('Invalid email or password');
     }
@@ -86,7 +86,6 @@ export class AuthService {
     const { accessToken, refreshToken } = generateTokens(user);
 
     user.refreshToken = refreshToken;
-    user.lastLogin = new Date();
     await user.save({ validateBeforeSave: false });
 
     setTokenCookies(res, accessToken, refreshToken);
@@ -100,7 +99,7 @@ export class AuthService {
   }
 
   static async forgotPassword(email: string): Promise<void> {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email, ...NOT_DELETED });
     if (!user) {
       // Don't reveal if email exists
       return;
@@ -127,6 +126,7 @@ export class AuthService {
     const user = await User.findOne({
       passwordResetToken: hashedToken,
       passwordResetExpire: { $gt: Date.now() },
+      ...NOT_DELETED,
     });
 
     if (!user) {
@@ -140,7 +140,7 @@ export class AuthService {
   }
 
   static async verifyEmail(token: string): Promise<void> {
-    const user = await User.findOne({ emailVerificationToken: token });
+    const user = await User.findOne({ emailVerificationToken: token, ...NOT_DELETED });
     if (!user) {
       throw new BadRequestError('Invalid verification token');
     }
@@ -161,7 +161,7 @@ export class AuthService {
       throw new UnauthorizedError('Invalid refresh token');
     }
 
-    const user = await User.findById(decoded.id);
+    const user = await User.findOne({ _id: decoded.id, ...NOT_DELETED });
     if (!user || !user.isActive) {
       throw new UnauthorizedError('User not found or inactive');
     }
@@ -177,7 +177,7 @@ export class AuthService {
   }
 
   static async getMe(userId: string): Promise<IUser> {
-    const user = await User.findById(userId);
+    const user = await User.findOne({ _id: userId, ...NOT_DELETED });
     if (!user) {
       throw new NotFoundError('User');
     }
@@ -185,7 +185,7 @@ export class AuthService {
   }
 
   static async updateProfile(userId: string, data: Partial<IUser>): Promise<IUser> {
-    const allowedFields = ['name', 'phone', 'avatar', 'preferences'];
+    const allowedFields = ['name', 'phone', 'avatar'];
     const updates: Record<string, any> = {};
 
     Object.keys(data).forEach((key) => {
@@ -194,7 +194,11 @@ export class AuthService {
       }
     });
 
-    const user = await User.findByIdAndUpdate(userId, updates, { new: true, runValidators: true });
+    const user = await User.findOneAndUpdate(
+      { _id: userId, ...NOT_DELETED },
+      updates,
+      { new: true, runValidators: true }
+    );
     if (!user) {
       throw new NotFoundError('User');
     }
@@ -203,7 +207,7 @@ export class AuthService {
   }
 
   static async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
-    const user = await User.findById(userId).select('+password');
+    const user = await User.findOne({ _id: userId, ...NOT_DELETED }).select('+password');
     if (!user) {
       throw new NotFoundError('User');
     }

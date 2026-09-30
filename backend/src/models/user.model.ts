@@ -3,27 +3,6 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
 
-export interface IAddress {
-  _id?: mongoose.Types.ObjectId;
-  label: string;
-  fullName: string;
-  phone: string;
-  address1: string;
-  address2?: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-  isDefault: boolean;
-}
-
-export interface IUserPreferences {
-  emailNotifications: boolean;
-  smsNotifications: boolean;
-  currency: string;
-  language: string;
-}
-
 export interface IUser extends Document {
   name: string;
   email: string;
@@ -33,35 +12,18 @@ export interface IUser extends Document {
   phone?: string;
   isVerified: boolean;
   isActive: boolean;
-  lastLogin?: Date;
+  isDeleted: boolean;
+  deletedAt?: Date;
   refreshToken?: string;
   passwordResetToken?: string;
   passwordResetExpire?: Date;
   emailVerificationToken?: string;
-  addresses: IAddress[];
-  preferences: IUserPreferences;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
   generateAuthToken(): string;
   generateRefreshToken(): string;
 }
-
-const addressSchema = new Schema<IAddress>(
-  {
-    label: { type: String, required: true, trim: true },
-    fullName: { type: String, required: true, trim: true },
-    phone: { type: String, required: true, trim: true },
-    address1: { type: String, required: true, trim: true },
-    address2: { type: String, trim: true, default: '' },
-    city: { type: String, required: true, trim: true },
-    state: { type: String, required: true, trim: true },
-    postalCode: { type: String, required: true, trim: true },
-    country: { type: String, required: true, trim: true, default: 'US' },
-    isDefault: { type: Boolean, default: false },
-  },
-  { _id: true }
-);
 
 const userSchema = new Schema<IUser>(
   {
@@ -75,7 +37,6 @@ const userSchema = new Schema<IUser>(
     email: {
       type: String,
       required: [true, 'Email is required'],
-      unique: true,
       trim: true,
       lowercase: true,
       match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email'],
@@ -95,18 +56,12 @@ const userSchema = new Schema<IUser>(
     phone: { type: String, trim: true, default: '' },
     isVerified: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
-    lastLogin: { type: Date },
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date },
     refreshToken: { type: String, select: false },
     passwordResetToken: { type: String, select: false },
     passwordResetExpire: { type: Date, select: false },
     emailVerificationToken: { type: String, select: false },
-    addresses: [addressSchema],
-    preferences: {
-      emailNotifications: { type: Boolean, default: true },
-      smsNotifications: { type: Boolean, default: false },
-      currency: { type: String, default: 'PKR' },
-      language: { type: String, default: 'en' },
-    },
   },
   {
     timestamps: true,
@@ -117,6 +72,16 @@ const userSchema = new Schema<IUser>(
 
 userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
+userSchema.index({ isDeleted: 1, isActive: 1 });
+userSchema.index({ isDeleted: 1, createdAt: -1 });
+
+// Emails are unique among accounts that still exist. A soft-deleted account
+// releases its email so the same person (or a re-created staff member) can
+// register again with it. Synced in config/db.ts via syncIndexes().
+userSchema.index(
+  { email: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: false } }
+);
 
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();

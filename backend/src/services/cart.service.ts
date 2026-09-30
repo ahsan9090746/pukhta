@@ -2,6 +2,7 @@ import { Cart, ICart } from '../models/cart.model';
 import { Product } from '../models/product.model';
 import { Coupon } from '../models/coupon.model';
 import { NotFoundError, BadRequestError } from '../utils/AppError';
+import { NOT_DELETED } from '../utils/softDelete';
 
 export class CartService {
   static async getCart(userId: string): Promise<ICart> {
@@ -25,7 +26,7 @@ export class CartService {
     quantity: number,
     variantId?: string
   ): Promise<ICart> {
-    const product = await Product.findById(productId);
+    const product = await Product.findOne({ _id: productId, ...NOT_DELETED });
     if (!product || !product.isActive) {
       throw new NotFoundError('Product');
     }
@@ -89,7 +90,7 @@ export class CartService {
     if (quantity <= 0) {
       cart.items = cart.items.filter((i) => i._id && i._id.toString() !== itemId);
     } else {
-      const product = await Product.findById(item.product);
+      const product = await Product.findOne({ _id: item.product, ...NOT_DELETED });
       if (product) {
         if (item.variant) {
           const variant = product.variants.find((v) => v._id && v._id.toString() === item.variant?.toString());
@@ -149,6 +150,7 @@ export class CartService {
     const coupon = await Coupon.findOne({
       code: code.toUpperCase(),
       isActive: true,
+      ...NOT_DELETED,
     });
 
     if (!coupon) {

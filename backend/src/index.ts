@@ -1,3 +1,7 @@
+import dns from 'dns';
+dns.setDefaultResultOrder('ipv4first');
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
@@ -10,9 +14,13 @@ import connectDB from './config/db';
 import { logger } from './utils/logger';
 import { errorHandler, notFound } from './middleware/error.middleware';
 import { generalLimiter } from './middleware/rate-limiter.middleware';
+import { trackVisit } from './middleware/analytics.middleware';
 import routes from './routes';
 import { initializeSocket } from './socket';
 import { seedSizes } from './seeds/size-seed';
+import { seedAdmin } from './seeds/admin-seed';
+import { seedSettings } from './seeds/settings-seed';
+import { logWhatsAppStatus } from './services/whatsapp.service';
 import fs from 'fs';
 import path from 'path';
 
@@ -45,7 +53,15 @@ app.use(cors({
   origin: config.corsOrigin,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Refresh-Token'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Refresh-Token',
+    // Client analytics tracker (frontend/src/lib/analytics.ts) identifies
+    // visitors through these custom headers — they must pass the CORS preflight.
+    'X-Visitor-Id',
+    'X-Session-Id',
+  ],
 }));
 
 // Compression
@@ -57,6 +73,9 @@ app.use(cookieParser());
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Analytics: passive visit tracking for any non-API traffic (skips /api, /uploads, bots)
+app.use(trackVisit);
 
 // Logging
 if (config.nodeEnv !== 'test') {
@@ -90,11 +109,15 @@ const startServer = async () => {
   try {
     await connectDB();
     await seedSizes();
+    await seedAdmin();
+    await seedSettings();
 
-    server.listen(config.port, () => {
+server.listen(config.port, '0.0.0.0', () => {
       logger.info(`Server running in ${config.nodeEnv} mode on port ${config.port}`);
       logger.info(`API available at http://localhost:${config.port}/api`);
       logger.info(`Health check at http://localhost:${config.port}/api/health`);
+      logger.info(`Network access: http://192.168.100.6:${config.port}/api`);
+      logWhatsAppStatus();
     });
   } catch (error) {
     logger.error(`Failed to start server: ${error}`);
@@ -125,6 +148,13 @@ process.on('SIGTERM', () => {
   });
 });
 
-startServer();
+// In test mode (Jest sets NODE_ENV=test) the tests own the MongoDB connection
+// and HTTP server lifecycle — they connect to a dedicated test DB in beforeAll
+// and close the server in afterAll. Starting the real connection + seeds here
+// would race with that (and point at the wrong database).
+if (config.nodeEnv !== 'test') {
+  startServer();
+}
 
 export { app, server, io };
+

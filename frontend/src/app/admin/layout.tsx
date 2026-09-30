@@ -14,12 +14,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   LayoutDashboard,
+  BarChart3,
   Package,
   FolderTree,
   Building2,
   ShoppingCart,
   UserCog,
   Image,
+  Film,
   Star,
   Warehouse,
   Settings,
@@ -32,11 +34,13 @@ import { cn } from "@/lib/utils";
 
 const menuItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { label: "Products", href: "/admin/products", icon: Package },
   { label: "Categories", href: "/admin/categories", icon: FolderTree },
   { label: "Orders", href: "/admin/orders", icon: ShoppingCart },
   { label: "Staff", href: "/admin/staff", icon: UserCog },
   { label: "Banners", href: "/admin/banners", icon: Image },
+  { label: "Shorts", href: "/admin/shorts", icon: Film },
   { label: "Reviews", href: "/admin/reviews", icon: Star },
   { label: "Manage Stock", href: "/admin/inventory", icon: Warehouse },
   { label: "Settings", href: "/admin/settings", icon: Settings },
@@ -85,7 +89,14 @@ export default function AdminLayout({
             return;
           }
           setUser(fetchedUser);
-        } catch {
+        } catch (err: any) {
+          // Network/server hiccup (backend busy, timeout, 5xx, rate-limit):
+          // don't log the user out — just stop loading and let them retry.
+          const status = err?.response?.status;
+          if (status !== 401 && status !== 403) {
+            setChecking(false);
+            return;
+          }
           logout();
           router.replace("/admin/login");
           return;
@@ -164,7 +175,13 @@ export default function AdminLayout({
 
               <ScrollArea className="h-[calc(100vh-120px)]">
                 <nav className="p-2 space-y-1">
-                  {menuItems.map((item) => {
+                  {menuItems
+                    .filter(
+                      (item) =>
+                        // Staff lack the 'analytics.view' permission — hide it for them
+                        item.href !== "/admin/analytics" || user?.role !== "staff"
+                    )
+                    .map((item) => {
                     const isActive = pathname === item.href;
                     return (
                       <Link

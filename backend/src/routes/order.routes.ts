@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { OrderController } from '../controllers/order.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/role.middleware';
-import { validateOrder, validateObjectId } from '../utils/validators';
-import { orderLimiter } from '../middleware/rate-limiter.middleware';
+import { validateOrder, validateObjectId, validateTrackOrder } from '../utils/validators';
+import { orderLimiter, trackLimiter } from '../middleware/rate-limiter.middleware';
 import { NotFoundError } from '../utils/AppError';
 
 const router = Router();
@@ -11,6 +11,9 @@ const router = Router();
 // Guest checkout — no authentication required (must be before router.use(authenticate))
 router.post('/guest', orderLimiter, validateOrder, OrderController.createGuest);
 router.get('/guest/:orderNumber', OrderController.getGuestOrder);
+
+// Public order tracking — no authentication required
+router.post('/track', trackLimiter, validateTrackOrder, OrderController.track);
 
 router.use(authenticate);
 

@@ -8,14 +8,22 @@ import { reviewLimiter } from '../middleware/rate-limiter.middleware';
 const router = Router();
 
 router.get('/product/:productId', optionalAuth, ReviewController.getProductReviews);
+router.get('/featured', optionalAuth, ReviewController.getFeatured);
 router.get('/', authenticate, requirePermission('reviews.manage'), ReviewController.getAll);
 
 router.post(
   '/',
-  authenticate,
+  optionalAuth,
   reviewLimiter,
   validateReview,
   ReviewController.create
+);
+
+router.post(
+  '/fake',
+  authenticate,
+  requirePermission('reviews.manage'),
+  ReviewController.createFakeReview
 );
 
 router.put(

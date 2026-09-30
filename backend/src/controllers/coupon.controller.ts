@@ -3,6 +3,7 @@ import { Coupon } from '../models/coupon.model';
 import { NotFoundError } from '../utils/AppError';
 import { catchAsync } from '../utils/catchAsync';
 import { parsePagination, parseSort, buildPaginationResponse } from '../utils/pagination';
+import { NOT_DELETED, softDeleteFields } from '../utils/softDelete';
 
 export class CouponController {
   static create = catchAsync(async (req: Request, res: Response) => {
@@ -19,7 +20,7 @@ export class CouponController {
     const { page, limit, skip } = parsePagination(req.query as any);
     const sort = parseSort(req.query.sort as string);
 
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = { ...NOT_DELETED };
     if (req.query.isActive !== undefined) filter.isActive = req.query.isActive === 'true';
     if (req.query.search) filter.code = new RegExp(req.query.search as string, 'i');
 
@@ -42,7 +43,7 @@ export class CouponController {
   });
 
   static getById = catchAsync(async (req: Request, res: Response) => {
-    const coupon = await Coupon.findById(req.params.id);
+    const coupon = await Coupon.findOne({ _id: req.params.id, ...NOT_DELETED });
 
     if (!coupon) {
       throw new NotFoundError('Coupon');
@@ -60,6 +61,7 @@ export class CouponController {
     const coupon = await Coupon.findOne({
       code: code.toUpperCase(),
       isActive: true,
+      ...NOT_DELETED,
     });
 
     if (!coupon) {
@@ -114,8 +116,8 @@ export class CouponController {
   });
 
   static update = catchAsync(async (req: Request, res: Response) => {
-    const coupon = await Coupon.findByIdAndUpdate(
-      req.params.id,
+    const coupon = await Coupon.findOneAndUpdate(
+      { _id: req.params.id, ...NOT_DELETED },
       req.body,
       { new: true, runValidators: true }
     );
@@ -131,8 +133,14 @@ export class CouponController {
     });
   });
 
+  // Soft delete — the coupon row is kept so redeemed orders can still be audited.
   static delete = catchAsync(async (req: Request, res: Response) => {
-    const coupon = await Coupon.findByIdAndDelete(req.params.id);
+    const coupon = await Coupon.findOneAndUpdate(
+      { _id: req.params.id, ...NOT_DELETED },
+      { $set: softDeleteFields({ isActive: false }) },
+      { new: true }
+    );
+
     if (!coupon) {
       throw new NotFoundError('Coupon');
     }

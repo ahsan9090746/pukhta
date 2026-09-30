@@ -68,6 +68,27 @@ export class OrderController {
     });
   });
 
+  /**
+   * Public order tracking — no authentication required.
+   * Accepts { orderCode?, phone? }; at least one is required
+   * (also enforced by validateTrackOrder in the route).
+   */
+  static track = catchAsync(async (req: Request, res: Response) => {
+    const orders = await OrderService.trackOrders({
+      orderCode: req.body.orderCode,
+      phone: req.body.phone,
+    });
+
+    if (orders.length === 0) {
+      throw new NotFoundError('Order');
+    }
+
+    res.status(200).json({
+      success: true,
+      data: { orders },
+    });
+  });
+
   static create = catchAsync(async (req: Request, res: Response) => {
     const order = await OrderService.create({
       userId: req.user!._id.toString(),

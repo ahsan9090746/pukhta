@@ -1,8 +1,12 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { ProductService } from '../services/product.service';
 import { Product } from '../models/product.model';
 import { catchAsync } from '../utils/catchAsync';
-import { deleteUploadedFile } from '../utils/upload';
+import { NotFoundError } from '../utils/AppError';
+import { deleteUploadedFile, renameUploadedEntityFiles } from '../utils/upload';
+import { sanitizeRichText } from '../utils/sanitize';
+import { NOT_DELETED } from '../utils/softDelete';
 
 // Safely parse a JSON string field from multipart body
 const parseJsonField = (value: any, fallback: any): any => {
@@ -20,13 +24,28 @@ const parseProductBody = (body: Record<string, any>): Record<string, any> => {
   const payload: Record<string, any> = {};
   if (body.name !== undefined) payload.name = body.name;
   if (body.slug !== undefined && body.slug !== '') payload.slug = body.slug;
-  if (body.description !== undefined) payload.description = body.description;
-  if (body.shortDescription !== undefined) payload.shortDescription = body.shortDescription;
+  if (body.description !== undefined) payload.description = sanitizeRichText(body.description);
+  if (body.shortDescription !== undefined) payload.shortDescription = sanitizeRichText(body.shortDescription);
   if (body.sku !== undefined) payload.sku = body.sku;
-  if (body.barcode !== undefined) payload.barcode = body.barcode;
   if (body.altText !== undefined) payload.altText = body.altText;
+  if (body.metaTitle !== undefined) payload.metaTitle = body.metaTitle;
+  if (body.metaDescription !== undefined) payload.metaDescription = body.metaDescription;
 
-  if (body.categoryId !== undefined && body.categoryId !== '') payload.category = body.categoryId;
+  // Admin UI sends categoriesId (JSON array string via multipart);
+  // direct API calls may send categoryId (single) or `category`.
+  let rawCategories: any;
+  if (body.categoriesId !== undefined && body.categoriesId !== '') {
+    rawCategories = parseJsonField(body.categoriesId, undefined);
+  } else if (body.categoryId !== undefined && body.categoryId !== '') {
+    rawCategories = [body.categoryId];
+  } else {
+    rawCategories = body.category;
+  }
+  if (rawCategories !== undefined) {
+    const cats = Array.isArray(rawCategories) ? rawCategories : [rawCategories];
+    const filtered = cats.filter((c: string) => c && c.trim());
+    if (filtered.length > 0) payload.categories = filtered;
+  }
 
   if (body.price !== undefined && body.price !== '') payload.price = Number(body.price);
   if (body.compareAtPrice !== undefined && body.compareAtPrice !== '') {
@@ -37,6 +56,7 @@ const parseProductBody = (body: Record<string, any>): Record<string, any> => {
 
   if (body.isActive !== undefined && body.isActive !== '') payload.isActive = String(body.isActive) === 'true';
   if (body.isFeatured !== undefined && body.isFeatured !== '') payload.isFeatured = String(body.isFeatured) === 'true';
+  if (body.isNewArrival !== undefined && body.isNewArrival !== '') payload.isNewArrival = String(body.isNewArrival) === 'true';
 
   const variants = parseJsonField(body.variants, undefined);
   if (variants !== undefined) payload.variants = variants;
@@ -52,10 +72,6 @@ const parseProductBody = (body: Record<string, any>): Record<string, any> => {
   return payload;
 };
 
-// Uploaded image paths from multer (field name: images)
-const getUploadedImages = (req: Request): string[] =>
-  (req.files as Express.Multer.File[] | undefined)?.map((f) => `/uploads/${f.filename}`) ?? [];
-
 // Delete files from uploads that are no longer referenced
 const cleanupImages = (oldImages: string[], keep: string[]) => {
   oldImages.forEach((img) => {
@@ -65,10 +81,30 @@ const cleanupImages = (oldImages: string[], keep: string[]) => {
 
 // Product SKU is required by the schema. The admin form pre-fills it, but
 // direct API calls may omit it — generate a unique one instead of failing.
+// SKUs run sequentially from the latest SKU in DB (e.g., PUK9055 -> PUK9056).
 const generateUniqueSku = async (): Promise<string> => {
-  let counter = (await Product.countDocuments()) + 1;
-  while (await Product.exists({ sku: `SKU-${counter}` })) counter += 1;
-  return `SKU-${counter}`;
+  const lastProduct = await Product.findOne({ sku: /^Puk\d+$/i })
+    .sort({ sku: -1 })
+    .select('sku')
+    .lean();
+
+  let nextNumber = 9001;
+  if (lastProduct?.sku) {
+    const match = lastProduct.sku.match(/^Puk(\d+)$/i);
+    if (match) {
+      nextNumber = parseInt(match[1], 10) + 1;
+    }
+  }
+
+  while (await Product.exists({ sku: `Puk${nextNumber}` })) {
+    nextNumber += 1;
+  }
+
+  return `Puk${nextNumber}`;
+};
+
+export const getNextSku = async (): Promise<string> => {
+  return generateUniqueSku();
 };
 
 // Normalize variants: drop fully-empty rows, auto-generate missing SKUs.
@@ -98,11 +134,20 @@ const normalizeVariants = (payload: Record<string, any>) => {
 export class ProductController {
   static create = catchAsync(async (req: Request, res: Response) => {
     const payload = parseProductBody(req.body);
-    const uploaded = getUploadedImages(req);
+
+    // The product id is generated up-front so the uploaded images can be
+    // renamed to "<productId>-<n>.<ext>" inside uploads/product/.
+    const productId = new mongoose.Types.ObjectId();
+    const uploaded = renameUploadedEntityFiles(
+      req.files as Express.Multer.File[] | undefined,
+      'product',
+      productId.toString()
+    );
     if (uploaded.length > 0) {
       payload.images = uploaded;
       payload.thumbnail = uploaded[0];
     }
+    payload._id = productId;
 
     // Auto-generate the product SKU when the client sends none/empty
     if (!payload.sku || !String(payload.sku).trim()) {
@@ -168,7 +213,7 @@ export class ProductController {
       .slice(0, 4);
 
     const products = ids.length
-      ? await Product.find({ _id: { $in: ids }, isActive: true })
+      ? await Product.find({ _id: { $in: ids }, isActive: true, ...NOT_DELETED })
           .populate('category', 'name slug')
       : [];
 
@@ -189,7 +234,13 @@ export class ProductController {
 
   static update = catchAsync(async (req: Request, res: Response) => {
     const payload = parseProductBody(req.body);
-    const uploaded = getUploadedImages(req);
+    // Newly uploaded images are renamed to "<productId>-<n>.<ext>" inside
+    // uploads/product/ (a random suffix is added when a name is taken).
+    const uploaded = renameUploadedEntityFiles(
+      req.files as Express.Multer.File[] | undefined,
+      'product',
+      req.params.id
+    );
 
     // An empty SKU on update means "keep the existing one" (avoids validation error)
     if (payload.sku !== undefined && !String(payload.sku).trim()) {
@@ -201,7 +252,7 @@ export class ProductController {
       .filter((p: any) => typeof p === 'string' && p.startsWith('/uploads/'));
 
     // Fetch old product for image cleanup
-    const existing = await Product.findById(req.params.id);
+    const existing = await Product.findOne({ _id: req.params.id, ...NOT_DELETED });
     const oldImages: string[] = existing?.images ?? [];
 
     if (uploaded.length > 0 || keptExisting.length > 0 || String(req.body.removeImages || '') === 'true') {
@@ -240,13 +291,14 @@ export class ProductController {
     });
   });
 
+  // Deleting a product removes the document from MongoDB entirely — the
+  // model hook then automatically deletes its image files from the uploads
+  // folder (uploads/product/).
   static delete = catchAsync(async (req: Request, res: Response) => {
-    const product = await Product.findById(req.params.id);
-    if (product) {
-      (product.images ?? []).forEach((img) => deleteUploadedFile(img));
+    const deleted = await Product.findOneAndDelete({ _id: req.params.id });
+    if (!deleted) {
+      throw new NotFoundError('Product');
     }
-
-    await ProductService.delete(req.params.id);
 
     res.status(200).json({
       success: true,
@@ -265,12 +317,11 @@ export class ProductController {
   });
 
   static getNewArrivals = catchAsync(async (req: Request, res: Response) => {
-    const limit = parseInt(req.query.limit as string) || 10;
-    const products = await ProductService.getNewArrivals(limit);
+    const result = await ProductService.getNewArrivals(req.query as any);
 
     res.status(200).json({
       success: true,
-      data: { products },
+      data: result,
     });
   });
 
@@ -281,6 +332,33 @@ export class ProductController {
     res.status(200).json({
       success: true,
       data: { products },
+    });
+  });
+
+  static getNextSku = catchAsync(async (req: Request, res: Response) => {
+    const nextSku = await getNextSku();
+    res.status(200).json({ success: true, data: { sku: nextSku } });
+  });
+
+  static toggleNewArrivals = catchAsync(async (req: Request, res: Response) => {
+    const { productIds, isNewArrival } = req.body;
+
+    if (!Array.isArray(productIds)) {
+      res.status(400).json({
+        success: false,
+        message: 'productIds must be an array',
+      });
+      return;
+    }
+
+    await Product.updateMany(
+      { _id: { $in: productIds }, ...NOT_DELETED },
+      { $set: { isNewArrival: isNewArrival !== false } }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: `${productIds.length} products updated as New Arrivals`,
     });
   });
 }

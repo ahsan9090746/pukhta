@@ -52,7 +52,7 @@ afterAll(async () => {
   await User.deleteMany({});
   await Role.deleteMany({});
   await mongoose.disconnect();
-  server.close();
+  if (server.listening) server.close();
 });
 
 describe('Product Endpoints', () => {
@@ -178,10 +178,10 @@ describe('Product Endpoints', () => {
       expect(res.body.data.product.name).toBe(sampleProduct.name);
     });
 
-    it('should return 400 for invalid ID format', async () => {
+    it('should return 404 for invalid ID (not found as id or slug)', async () => {
       const res = await request(app)
         .get(`${API_URL}/products/invalidid`)
-        .expect(422);
+        .expect(404);
 
       expect(res.body.success).toBe(false);
     });

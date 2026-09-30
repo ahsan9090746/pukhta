@@ -44,7 +44,14 @@ export const config = {
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
   },
 
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  corsOrigin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(','),
 
   logLevel: process.env.LOG_LEVEL || 'info',
+
+  whatsapp: {
+    enabled: process.env.WHATSAPP_ENABLED === 'true',
+    provider: process.env.WHATSAPP_PROVIDER || 'callmebot',
+    ownerPhone: process.env.WHATSAPP_OWNER_PHONE || '',
+    callmebotApiKey: process.env.CALLMEBOT_API_KEY || '',
+  },
 };

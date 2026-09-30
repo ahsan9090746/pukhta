@@ -13,11 +13,13 @@ import notificationRoutes from './notification.routes';
 import userRoutes from './user.routes';
 import adminRoutes from './admin.routes';
 import dashboardRoutes from './dashboard.routes';
+import analyticsRoutes from './analytics.routes';
 import staffRoutes from './staff.routes';
 import returnRefundRoutes from './return-refund.routes';
 import settingsRoutes from './settings.routes';
 import inventoryRoutes from './inventory.routes';
 import sizeRoutes from './size.routes';
+import shortRoutes from './short.routes';
 
 const router = Router();
 
@@ -39,12 +41,14 @@ router.use('/notifications', notificationRoutes);
 // Admin routes
 router.use('/admin', adminRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/analytics', analyticsRoutes);
 router.use('/users', userRoutes);
 router.use('/staff', staffRoutes);
 router.use('/returns', returnRefundRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/inventory', inventoryRoutes);
 router.use('/sizes', sizeRoutes);
+router.use('/shorts', shortRoutes);
 
 // Health check
 router.get('/health', (req, res) => {

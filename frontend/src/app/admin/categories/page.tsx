@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import DataTable from "@/components/admin/data-table";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, ImagePlus, X, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, ImagePlus, X, Eye, Home } from "lucide-react";
+import RichTextEditor from "@/components/ui/rich-text-editor";
+import { Checkbox } from "@/components/ui/checkbox";
 import { getImageUrl } from "@/lib/utils";
 import Link from "next/link";
 
@@ -33,6 +36,10 @@ export default function AdminCategoriesPage() {
   const [parentId, setParentId] = useState("");
   const [altText, setAltText] = useState("");
   const [altTextManuallyEdited, setAltTextManuallyEdited] = useState(false);
+  const [metaTitle, setMetaTitle] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
+  const [homeOpen, setHomeOpen] = useState(false);
+  const [homeSelection, setHomeSelection] = useState<string[]>([]);
 
   // Revoke object URL to avoid memory leaks
   useEffect(() => {
@@ -64,6 +71,7 @@ export default function AdminCategoriesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["home-categories"] });
       toast.success(editingCategory ? "Category updated" : "Category created");
       setOpen(false);
       resetForm();
@@ -77,9 +85,41 @@ export default function AdminCategoriesPage() {
     mutationFn: (id: string) => api.delete(`/categories/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["home-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["home-showcase"] });
       toast.success("Category deleted (image removed from uploads)");
     },
   });
+
+  const homeSelectionMutation = useMutation({
+    mutationFn: (categoryIds: string[]) =>
+      api.patch("/categories/home-selection", { categoryIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["home-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["home-showcase"] });
+      toast.success("Home page categories updated");
+      setHomeOpen(false);
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || "Something went wrong");
+    },
+  });
+
+  // Pre-fill current selection from the fetched categories when opening the dialog
+  const openHomeSelection = () => {
+    const current = (categories || [])
+      .filter((c: any) => c.showOnHome)
+      .map((c: any) => c._id);
+    setHomeSelection(current);
+    setHomeOpen(true);
+  };
+
+  const toggleHomeSelection = (id: string) => {
+    setHomeSelection((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   const resetForm = () => {
     setName("");
@@ -93,6 +133,8 @@ export default function AdminCategoriesPage() {
     setParentId("");
     setAltText("");
     setAltTextManuallyEdited(false);
+    setMetaTitle("");
+    setMetaDescription("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -127,6 +169,8 @@ export default function AdminCategoriesPage() {
     formData.append("slug", slug);
     formData.append("description", description);
     if (altText) formData.append("altText", altText);
+    formData.append("metaTitle", metaTitle);
+    formData.append("metaDescription", metaDescription);
     const level = categoryType === "parent" ? 0 : categoryType === "child" ? 1 : 2;
     formData.append("level", String(level));
     if (categoryType !== "parent" && parentId) {
@@ -182,7 +226,15 @@ export default function AdminCategoriesPage() {
       },
     },
     { header: "Slug", accessorKey: "slug" },
-    { header: "Products", accessorKey: "productCount" },
+    {
+      header: "Products",
+      accessorKey: "productCount",
+      cell: (row: any) => (
+        <Badge variant="secondary" className="font-medium">
+          {row.productCount ?? 0} {row.productCount === 1 ? "product" : "products"}
+        </Badge>
+      ),
+    },
     {
       header: "Actions",
       accessorKey: "_id",
@@ -208,6 +260,8 @@ export default function AdminCategoriesPage() {
               setParentId(row.parent?._id || row.parent || "");
               setAltText(row.altText || row.name || "");
               setAltTextManuallyEdited(!!row.altText);
+              setMetaTitle(row.metaTitle || "");
+              setMetaDescription(row.metaDescription || "");
               setOpen(true);
             }}
           >
@@ -233,22 +287,87 @@ export default function AdminCategoriesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Categories</h1>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+        <div className="flex items-center gap-2">
+          {/* Home Selection — choose which categories appear below "Shop by Category" */}
+          <Dialog open={homeOpen} onOpenChange={setHomeOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" onClick={openHomeSelection}>
+                <Home className="h-4 w-4 mr-2" />
+                Home Selection
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Select Home Page Categories</DialogTitle>
+              </DialogHeader>
+              <p className="text-xs text-muted-foreground -mt-1">
+                Selected categories will be listed below &quot;Shop by Category&quot; on the
+                home page.
+              </p>
+              <div className="max-h-80 overflow-y-auto space-y-1.5 pr-1">
+                {(categories || []).map((c: any) => {
+                  const checked = homeSelection.includes(c._id);
+                  return (
+                    <label
+                      key={c._id}
+                      className={`flex items-center gap-3 rounded-lg border p-2.5 cursor-pointer transition-colors ${
+                        checked ? "border-brand-gold/60 bg-brand-gold/5" : "hover:bg-muted/50"
+                      }`}
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() => toggleHomeSelection(c._id)}
+                      />
+                      {c.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={getImageUrl(c.image)}
+                          alt={c.name}
+                          className="h-9 w-9 rounded-md object-cover"
+                        />
+                      ) : (
+                        <div className="h-9 w-9 rounded-md bg-muted flex items-center justify-center">
+                          <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <span className="text-sm font-medium flex-1">{c.name}</span>
+                      {c.showOnHome && (
+                        <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                          On Home
+                        </Badge>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+              <Button
+                className="w-full"
+                disabled={homeSelectionMutation.isPending}
+                onClick={() => homeSelectionMutation.mutate(homeSelection)}
+              >
+                {homeSelectionMutation.isPending
+                  ? "Saving..."
+                  : `Save (${homeSelection.length} selected)`}
+              </Button>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
               Add Category
             </Button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingCategory ? "Edit" : "Create"} Category</DialogTitle>
+          <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-lg">{editingCategory ? "Edit" : "Create"} Category</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
+            <form onSubmit={handleSubmit} className="space-y-2.5">
+              <div className="space-y-1.5">
                 <label className="text-sm font-medium">Category Type</label>
                 <select
-                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                  className="w-full border rounded-md px-3 py-1.5 text-sm bg-background"
                   value={categoryType}
                   onChange={(e) => {
                     setCategoryType(e.target.value as "parent" | "child" | "sub");
@@ -263,19 +382,18 @@ export default function AdminCategoriesPage() {
                   {categoryType === "parent"
                     ? "Top-level category with no parent"
                     : categoryType === "child"
-                    ? "Nested under a Parent Category"
+                    ? "Nested under a Parent Category (optional)"
                     : "Nested under a Child Category"}
                 </p>
               </div>
 
               {categoryType === "child" && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Parent Category</label>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Parent Category (Optional)</label>
                   <select
-                    className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                    className="w-full border rounded-md px-3 py-1.5 text-sm bg-background"
                     value={parentId}
                     onChange={(e) => setParentId(e.target.value)}
-                    required
                   >
                     <option value="">Select parent category</option>
                     {(categories || [])
@@ -290,10 +408,10 @@ export default function AdminCategoriesPage() {
               )}
 
               {categoryType === "sub" && (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <label className="text-sm font-medium">Parent Category (Child)</label>
                   <select
-                    className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                    className="w-full border rounded-md px-3 py-1.5 text-sm bg-background"
                     value={parentId}
                     onChange={(e) => setParentId(e.target.value)}
                     required
@@ -310,20 +428,20 @@ export default function AdminCategoriesPage() {
                 </div>
               )}
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-sm font-medium">Name</label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} required />
+                <Input value={name} onChange={(e) => setName(e.target.value)} required className="h-9" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-sm font-medium">Slug</label>
-                <Input value={slug} onChange={(e) => setSlug(e.target.value)} required />
+                <Input value={slug} onChange={(e) => setSlug(e.target.value)} required className="h-9" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-sm font-medium">Description</label>
-                <Input value={description} onChange={(e) => setDescription(e.target.value)} />
+                <RichTextEditor value={description} onChange={setDescription} minHeight={80} />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-sm font-medium">Image Alt Text</label>
                 <Input
                   value={altText}
@@ -332,12 +450,35 @@ export default function AdminCategoriesPage() {
                     setAltTextManuallyEdited(true);
                   }}
                   placeholder="Auto-filled from category name"
+                  className="h-9"
                 />
                 <p className="text-xs text-muted-foreground">Used for SEO and accessibility. Auto-filled from category name.</p>
               </div>
 
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Meta Title</label>
+                <Input
+                  value={metaTitle}
+                  onChange={(e) => setMetaTitle(e.target.value)}
+                  placeholder="Enter meta title (max 60 characters)"
+                  maxLength={60}
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Meta Description</label>
+                <textarea
+                  value={metaDescription}
+                  onChange={(e) => setMetaDescription(e.target.value)}
+                  placeholder="Enter meta description (max 160 characters)"
+                  maxLength={160}
+                  rows={3}
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
+
               {/* Image upload */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-sm font-medium">Category Image</label>
                 {imagePreview ? (
                   <div className="relative w-fit">
@@ -345,23 +486,23 @@ export default function AdminCategoriesPage() {
                     <img
                       src={imagePreview}
                       alt="Preview"
-                      className="h-32 w-32 rounded-lg object-cover border"
+                      className="h-20 w-20 rounded-lg object-cover border"
                     />
                     <button
                       type="button"
                       onClick={removeImage}
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-white flex items-center justify-center"
+                      className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-white flex items-center justify-center"
                     >
-                      <X className="h-3.5 w-3.5" />
+                      <X className="h-3 w-3" />
                     </button>
                   </div>
                 ) : (
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors"
+                    className="w-full border-2 border-dashed rounded-lg p-3 text-center hover:border-primary/50 transition-colors"
                   >
-                    <ImagePlus className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <ImagePlus className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">
                       Click to upload image (JPEG, PNG, WEBP — max 5MB)
                     </p>
@@ -376,12 +517,13 @@ export default function AdminCategoriesPage() {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+              <Button type="submit" className="w-full h-10" disabled={createMutation.isPending}>
                 {createMutation.isPending ? "Saving..." : "Save"}
               </Button>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
       <DataTable columns={columns} data={categories || []} isLoading={isLoading} />
     </div>

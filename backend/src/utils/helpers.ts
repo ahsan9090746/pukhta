@@ -1,16 +1,74 @@
 import crypto from 'crypto';
+import { Counter } from '../models/counter.model';
 
 export const generateRandomToken = (length: number = 32): string => {
   return crypto.randomBytes(length).toString('hex');
 };
 
-export const generateOrderNumber = (): string => {
-  const date = new Date();
-  const year = date.getFullYear().toString().slice(-2);
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  return `FW${year}${month}${day}${random}`;
+export const generateOrderNumber = async (): Promise<string> => {
+  const counter = await Counter.findOneAndUpdate(
+    { name: 'orderNumber' },
+    [{
+      $set: {
+        seq: {
+          $cond: {
+            if: { $lt: ['$seq', 9001] },
+            then: 9001,
+            else: { $add: ['$seq', 1] },
+          },
+        },
+      },
+    }],
+    { new: true, upsert: true }
+  );
+  return `ORD-${counter!.seq}`;
+};
+
+/**
+ * Normalizes a phone number for matching: strips spaces, dashes and
+ * parentheses, and converts the Pakistani country-code format
+ * (+92XXXXXXXXXX / 92XXXXXXXXXX) to the local leading-zero format
+ * (0XXXXXXXXXX).
+ */
+export const normalizePhone = (phone: string): string => {
+  let cleaned = (phone || '').replace(/[\s\-().]/g, '');
+  if (cleaned.startsWith('+92')) {
+    cleaned = `0${cleaned.slice(3)}`;
+  } else if (cleaned.startsWith('92') && cleaned.length >= 11) {
+    cleaned = `0${cleaned.slice(2)}`;
+  }
+  return cleaned;
+};
+
+/**
+ * Returns the common formatting variants of a phone number (as typed,
+ * normalized, and international forms) so order tracking matches the
+ * number regardless of how it was entered at checkout.
+ */
+export const getPhoneVariants = (phone: string): string[] => {
+  const raw = (phone || '').trim();
+  const normalized = normalizePhone(raw);
+  const variants = new Set<string>();
+
+  if (raw) variants.add(raw);
+  if (normalized) variants.add(normalized);
+  if (normalized.startsWith('0')) {
+    variants.add(`+92${normalized.slice(1)}`);
+    variants.add(`92${normalized.slice(1)}`);
+  }
+
+  return Array.from(variants).filter((variant) => variant.length >= 7);
+};
+
+/**
+ * Masks a phone number for privacy (e.g. 03001234567 -> 0300******67).
+ * Used when a customer's orders are listed by phone search.
+ */
+export const maskPhone = (phone: string = ''): string => {
+  if (!phone) return '';
+  if (phone.length <= 4) return '****';
+  const hidden = '*'.repeat(Math.max(3, phone.length - 6));
+  return `${phone.slice(0, 4)}${hidden}${phone.slice(-2)}`;
 };
 
 export const calculateDiscount = (price: number, compareAtPrice: number): number => {

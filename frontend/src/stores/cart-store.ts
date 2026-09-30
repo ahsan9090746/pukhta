@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { trackEvent } from "@/lib/analytics";
 
 interface CartItem {
   _id: string;
@@ -28,10 +29,25 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       setItems: (items) => set({ items }),
-      addItem: (item) =>
+      addItem: (item) => {
         set((state) => ({
           items: [...state.items, item],
-        })),
+        }));
+
+        // Analytics: add_to_cart funnel event (fire-and-forget, deduped server-side)
+        try {
+          const productId =
+            typeof item.product === "string" ? item.product : item.product?._id;
+          if (productId && typeof window !== "undefined") {
+            trackEvent("add_to_cart", {
+              productId: String(productId),
+              path: window.location.pathname,
+            });
+          }
+        } catch {
+          // analytics must never break the cart
+        }
+      },
       removeItem: (itemId) =>
         set((state) => ({
           items: state.items.filter((item) => item._id !== itemId),

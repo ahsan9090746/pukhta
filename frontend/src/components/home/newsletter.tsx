@@ -41,10 +41,13 @@ export default function Newsletter() {
           viewport={{ once: true }}
           className="max-w-2xl mx-auto text-center"
         >
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Mail className="h-6 w-6 text-primary" />
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-gold/10">
+            <Mail className="h-6 w-6 text-brand-gold" />
           </div>
-          <h2 className="text-3xl font-bold">Stay in the Loop</h2>
+          <span className="inline-block text-[11px] uppercase tracking-[0.3em] font-semibold text-brand-gold mb-2">
+            Newsletter
+          </span>
+          <h2 className="text-3xl font-bold tracking-tight text-brand-gold">Stay in the Loop</h2>
           <p className="text-muted-foreground mt-2 mb-6">
             Subscribe to our newsletter for exclusive offers, new arrivals, and style
             inspiration.

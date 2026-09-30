@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config';
 import { User } from '../models/user.model';
 import { logger } from '../utils/logger';
+import { NOT_DELETED } from '../utils/softDelete';
 import { setSocketService } from '../services/notification.service';
 
 interface AuthenticatedSocket extends Socket {
@@ -37,7 +38,7 @@ export const initializeSocket = (httpServer: HttpServer): Server => {
         role: string;
       };
 
-      const user = await User.findById(decoded.id);
+      const user = await User.findOne({ _id: decoded.id, ...NOT_DELETED });
       if (!user || !user.isActive) {
         return next(new Error('User not found or inactive'));
       }

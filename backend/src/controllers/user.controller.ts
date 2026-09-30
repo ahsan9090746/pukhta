@@ -3,13 +3,14 @@ import { User } from '../models/user.model';
 import { NotFoundError } from '../utils/AppError';
 import { catchAsync } from '../utils/catchAsync';
 import { parsePagination, parseSort, buildPaginationResponse } from '../utils/pagination';
+import { NOT_DELETED, softDeleteFields } from '../utils/softDelete';
 
 export class UserController {
   static getAll = catchAsync(async (req: Request, res: Response) => {
     const { page, limit, skip } = parsePagination(req.query as any);
     const sort = parseSort(req.query.sort as string);
 
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = { ...NOT_DELETED };
     if (req.query.role) filter.role = req.query.role;
     if (req.query.isActive !== undefined) filter.isActive = req.query.isActive === 'true';
     if (req.query.search) {
@@ -39,7 +40,7 @@ export class UserController {
   });
 
   static getById = catchAsync(async (req: Request, res: Response) => {
-    const user = await User.findById(req.params.id)
+    const user = await User.findOne({ _id: req.params.id, ...NOT_DELETED })
       .select('-password -refreshToken');
 
     if (!user) {
@@ -62,8 +63,8 @@ export class UserController {
       }
     });
 
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
+    const user = await User.findOneAndUpdate(
+      { _id: req.params.id, ...NOT_DELETED },
       updates,
       { new: true, runValidators: true }
     ).select('-password -refreshToken');
@@ -80,7 +81,7 @@ export class UserController {
   });
 
   static delete = catchAsync(async (req: Request, res: Response) => {
-    const user = await User.findById(req.params.id);
+    const user = await User.findOne({ _id: req.params.id, ...NOT_DELETED });
     if (!user) {
       throw new NotFoundError('User');
     }
@@ -92,7 +93,11 @@ export class UserController {
       });
     }
 
-    await User.findByIdAndDelete(req.params.id);
+    // Soft delete: the account row stays (orders/reviews keep pointing at it)
+    // but the user can no longer authenticate.
+    await User.findByIdAndUpdate(user._id, {
+      $set: softDeleteFields({ isActive: false, refreshToken: undefined }),
+    });
 
     res.status(200).json({
       success: true,
@@ -101,11 +106,12 @@ export class UserController {
   });
 
   static getStats = catchAsync(async (req: Request, res: Response) => {
-    const totalUsers = await User.countDocuments();
-    const activeUsers = await User.countDocuments({ isActive: true });
-    const verifiedUsers = await User.countDocuments({ isVerified: true });
+    const totalUsers = await User.countDocuments({ ...NOT_DELETED });
+    const activeUsers = await User.countDocuments({ isActive: true, ...NOT_DELETED });
+    const verifiedUsers = await User.countDocuments({ isVerified: true, ...NOT_DELETED });
 
     const roleStats = await User.aggregate([
+      { $match: { ...NOT_DELETED } },
       { $group: { _id: '$role', count: { $sum: 1 } } },
     ]);
 
@@ -114,6 +120,7 @@ export class UserController {
 
     const newUsers = await User.countDocuments({
       createdAt: { $gte: thirtyDaysAgo },
+      ...NOT_DELETED,
     });
 
     res.status(200).json({
