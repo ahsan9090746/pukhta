@@ -9,7 +9,6 @@ import {
   Copy,
   CreditCard,
   Loader2,
-  Mail,
   MapPin,
   Package,
   PackageSearch,
@@ -26,8 +25,9 @@ import { Label } from "@/components/ui/label";
 import OrderTimeline from "@/components/order/order-timeline";
 import Breadcrumb from "@/components/common/breadcrumb";
 import EmptyState from "@/components/common/empty-state";
+import SupportCard from "@/components/common/support-card";
+import { copyText } from "@/lib/payment";
 import { useStoreSettings } from "@/hooks/useStoreSettings";
-import { toast } from "sonner";
 
 interface TrackedOrderItem {
   name: string;
@@ -94,6 +94,7 @@ const STATUS_STYLES: Record<string, { label: string; className: string }> = {
 
 const PAYMENT_LABELS: Record<string, string> = {
   cod: "Cash on Delivery",
+  bank_deposit: "Bank Deposit",
   card: "Credit / Debit Card",
 };
 
@@ -140,6 +141,8 @@ function OrderCard({
   storeEmail,
 }: OrderCardProps) {
   const [copied, setCopied] = useState(false);
+  // Icon swap for the tracking-number copy button (no popup).
+  const [trackingCopied, setTrackingCopied] = useState(false);
 
   const placedOn = new Date(order.createdAt).toLocaleDateString("en-US", {
     year: "numeric",
@@ -155,23 +158,18 @@ function OrderCard({
     : null;
 
   const copyCode = async () => {
-    try {
-      await navigator.clipboard.writeText(order.orderNumber);
+    // The icon swapping to a check is the confirmation (no popup).
+    if (await copyText(order.orderNumber)) {
       setCopied(true);
-      toast.success("Order code copied");
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Could not copy — please note it down manually");
     }
   };
 
   const copyTracking = async () => {
     if (!order.trackingNumber) return;
-    try {
-      await navigator.clipboard.writeText(order.trackingNumber);
-      toast.success("Tracking number copied");
-    } catch {
-      toast.error("Could not copy — please note it down manually");
+    if (await copyText(order.trackingNumber)) {
+      setTrackingCopied(true);
+      setTimeout(() => setTrackingCopied(false), 2000);
     }
   };
 
@@ -192,7 +190,7 @@ function OrderCard({
       transition={{ duration: 0.4, delay: Math.min(index * 0.08, 0.3) }}
       className="overflow-hidden rounded-3xl border bg-card shadow-premium"
     >
-      <div className="border-b bg-gradient-to-r from-brand-gold/10 via-transparent to-transparent px-6 py-5 sm:px-8">
+      <div className="border-b bg-gradient-to-r from-brand-gold/10 via-transparent to-transparent px-5 py-5 sm:px-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-brand-gold">
@@ -238,11 +236,12 @@ function OrderCard({
         </div>
       </div>
 
-      <div className="border-b px-6 py-7 sm:px-8">
+      <div className="border-b px-5 py-7 sm:px-8">
         <OrderTimeline status={order.orderStatus} />
       </div>
 
-      <div className="grid gap-5 border-b px-6 py-6 sm:grid-cols-3 sm:px-8">
+      {/* Phones: 2-column summary grid; desktop keeps 3 columns. */}
+      <div className="grid grid-cols-2 gap-5 border-b px-5 py-6 sm:grid-cols-3 sm:px-8">
         <div className="flex items-start gap-2.5">
           <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-brand-gold" />
           <div>
@@ -287,13 +286,21 @@ function OrderCard({
                 <button
                   type="button"
                   onClick={copyTracking}
-                  aria-label="Copy tracking number"
+                  aria-label={
+                    trackingCopied
+                      ? "Tracking number copied"
+                      : "Copy tracking number"
+                  }
                   className="group flex max-w-full items-center gap-1.5 text-left"
                 >
                   <span className="truncate text-sm font-semibold group-hover:text-brand-gold">
                     {order.trackingNumber}
                   </span>
-                  <Copy className="h-3 w-3 shrink-0 text-muted-foreground group-hover:text-brand-gold" />
+                  {trackingCopied ? (
+                    <Check className="h-3 w-3 shrink-0 text-emerald-600" />
+                  ) : (
+                    <Copy className="h-3 w-3 shrink-0 text-muted-foreground group-hover:text-brand-gold" />
+                  )}
                 </button>
                 <p className="text-xs text-muted-foreground">
                   {order.shippingCarrier || "With our courier partner"}
@@ -308,7 +315,7 @@ function OrderCard({
         </div>
       </div>
 
-      <div className="grid gap-8 px-6 py-6 sm:px-8 lg:grid-cols-[minmax(0,1fr)_260px]">
+      <div className="grid gap-6 px-5 py-6 sm:gap-8 sm:px-8 lg:grid-cols-[minmax(0,1fr)_260px]">
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wide">
             Items
@@ -333,7 +340,8 @@ function OrderCard({
                   )}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">
+                  {/* Phones wrap long names to 2 lines; desktop keeps 1 line. */}
+                  <span className="block text-sm font-medium line-clamp-2 sm:line-clamp-1">
                     {item.name}
                   </span>
                   <span className="text-xs text-muted-foreground">
@@ -380,7 +388,7 @@ function OrderCard({
         </div>
       </div>
 
-      <div className="grid gap-6 border-t px-6 py-6 sm:px-8 lg:grid-cols-2">
+      <div className="grid gap-5 border-t px-5 py-6 sm:gap-6 sm:px-8 lg:grid-cols-2">
         <div className="flex items-start gap-3">
           <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-gold" />
           <div className="text-sm">
@@ -400,39 +408,11 @@ function OrderCard({
           </div>
         </div>
 
-        {(storePhone || storeEmail) && (
-          <div className="flex items-start gap-3">
-            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-brand-gold" />
-            <div className="text-sm">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Need help with this order?
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Quote your order code and we will look into it right away.
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                {storePhone && (
-                  <a
-                    href={`tel:${storePhone.replace(/\s+/g, "")}`}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-gold hover:underline"
-                  >
-                    <Phone className="h-3.5 w-3.5" />
-                    {storePhone}
-                  </a>
-                )}
-                {storeEmail && (
-                  <a
-                    href={`mailto:${storeEmail}`}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-gold hover:underline"
-                  >
-                    <Mail className="h-3.5 w-3.5" />
-                    {storeEmail}
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        <SupportCard
+          phone={storePhone}
+          email={storeEmail}
+          orderNumber={order.orderNumber}
+        />
       </div>
     </motion.div>
   );
@@ -503,13 +483,15 @@ export default function TrackOrderPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="container py-8"
+      // Extra bottom space on phones so the fixed bottom nav never covers
+      // the order details; desktop keeps the old spacing.
+      className="container py-8 pb-28 md:pb-8"
     >
       <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Track Order" }]} />
 
       <div className="mx-auto mt-8 max-w-3xl">
         <div className="overflow-hidden rounded-3xl border bg-card shadow-premium">
-          <div className="bg-gradient-to-r from-brand-gold/12 via-transparent to-transparent px-6 py-8 text-center sm:px-10">
+          <div className="bg-gradient-to-r from-brand-gold/12 via-transparent to-transparent px-5 py-8 text-center sm:px-10">
             <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-brand-gold/10 ring-1 ring-brand-gold/30">
               <PackageSearch className="h-9 w-9 text-brand-gold" />
             </span>
@@ -525,7 +507,7 @@ export default function TrackOrderPage() {
             </p>
           </div>
 
-          <div className="border-t px-6 py-6 sm:px-10">
+          <div className="border-t px-5 py-6 sm:px-10">
             <form onSubmit={handleTrack} className="space-y-5">
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -647,31 +629,52 @@ export default function TrackOrderPage() {
                 icon: PackageSearch,
                 title: "Your order code",
                 text: "It starts with ORD- and is shown right after you place an order.",
+                href: null as string | null,
               },
               {
                 icon: Phone,
                 title: "Used phone number",
                 text: "The number you entered at checkout finds every order on it.",
+                href: null as string | null,
               },
               {
                 icon: Sparkles,
                 title: "Still stuck?",
                 text: "Contact us with your order code and we will help you out.",
+                href: "/contact" as string | null,
               },
-            ].map(({ icon: Icon, title, text }) => (
-              <div
-                key={title}
-                className="rounded-2xl border bg-card p-5 shadow-premium"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-gold/10 text-brand-gold">
-                  <Icon className="h-4 w-4" />
-                </span>
-                <p className="mt-3 text-sm font-semibold">{title}</p>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  {text}
-                </p>
-              </div>
-            ))}
+            ].map(({ icon: Icon, title, text, href }) => {
+              const inner = (
+                <>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-gold/10 text-brand-gold">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <p className="mt-3 text-sm font-semibold">
+                    {title}
+                    {href && <span className="text-brand-gold"> →</span>}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {text}
+                  </p>
+                </>
+              );
+              return href ? (
+                <Link
+                  key={title}
+                  href={href}
+                  className="rounded-2xl border border-brand-gold/30 bg-card p-5 shadow-premium transition-colors hover:border-brand-gold/60"
+                >
+                  {inner}
+                </Link>
+              ) : (
+                <div
+                  key={title}
+                  className="rounded-2xl border bg-card p-5 shadow-premium"
+                >
+                  {inner}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

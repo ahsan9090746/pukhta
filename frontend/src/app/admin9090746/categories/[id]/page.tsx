@@ -48,7 +48,7 @@ export default function AdminCategoryDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
       toast.success("Category deleted");
-      router.push("/admin/categories");
+      router.push("/admin9090746/categories");
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.error || "Failed to delete category");
@@ -79,7 +79,7 @@ export default function AdminCategoryDetailPage() {
         <FolderOpen className="h-16 w-16 text-muted-foreground" />
         <h1 className="text-2xl font-bold">Category not found</h1>
         <Button asChild variant="outline">
-          <Link href="/admin/categories">
+          <Link href="/admin9090746/categories">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Categories
           </Link>
@@ -183,7 +183,7 @@ export default function AdminCategoryDetailPage() {
                 {products.slice(0, 10).map((p: any) => (
                   <Link
                     key={p._id}
-                    href={`/admin/products/${p._id}`}
+                    href={`/admin9090746/products/${p._id}`}
                     className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors"
                   >
                     <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-muted shrink-0">
@@ -255,7 +255,7 @@ export default function AdminCategoryDetailPage() {
                 Parent Category
               </h2>
               <Link
-                href={`/admin/categories/${category.parent._id || category.parent}`}
+                href={`/admin9090746/categories/${category.parent._id || category.parent}`}
                 className="inline-flex items-center gap-2 text-sm font-medium hover:underline"
               >
                 <FolderOpen className="h-4 w-4" />

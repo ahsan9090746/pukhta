@@ -65,7 +65,7 @@ export default function AdminProductsPage() {
       header: "Name",
       accessorKey: "name",
       cell: (row: any) => (
-        <Link href={`/admin/products/${row._id}`} className="font-medium hover:underline">
+        <Link href={`/admin9090746/products/${row._id}`} className="font-medium hover:underline">
           {row.name}
         </Link>
       ),
@@ -84,12 +84,12 @@ export default function AdminProductsPage() {
       cell: (row: any) => (
         <div className="flex gap-2">
           <Button variant="ghost" size="icon" asChild>
-            <Link href={`/admin/products/${row._id}`}>
+            <Link href={`/admin9090746/products/${row._id}`}>
               <Eye className="h-4 w-4" />
             </Link>
           </Button>
           <Button variant="ghost" size="icon" asChild>
-            <Link href={`/admin/products/${row._id}/edit`}>
+            <Link href={`/admin9090746/products/${row._id}/edit`}>
               <Edit className="h-4 w-4" />
             </Link>
           </Button>
@@ -134,7 +134,7 @@ export default function AdminProductsPage() {
         <div className="flex items-center gap-3">
           <SelectNewArrivals />
           <Button asChild>
-            <Link href="/admin/products/new">
+            <Link href="/admin9090746/products/new">
               <Plus className="h-4 w-4 mr-2" />
               Add Product
             </Link>

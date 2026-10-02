@@ -203,7 +203,7 @@ export default function AdminCategoriesPage() {
         ),
     },
     { header: "Name", accessorKey: "name", cell: (row: any) => (
-      <Link href={`/admin/categories/${row._id}`} className="font-medium hover:underline">
+      <Link href={`/admin9090746/categories/${row._id}`} className="font-medium hover:underline">
         {row.name}
       </Link>
     ) },
@@ -241,7 +241,7 @@ export default function AdminCategoriesPage() {
       cell: (row: any) => (
         <div className="flex gap-2">
           <Button variant="ghost" size="icon" asChild>
-            <Link href={`/admin/categories/${row._id}`}>
+            <Link href={`/admin9090746/categories/${row._id}`}>
               <Eye className="h-4 w-4" />
             </Link>
           </Button>

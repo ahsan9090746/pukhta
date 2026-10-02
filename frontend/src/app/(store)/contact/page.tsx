@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +30,9 @@ export default function ContactPage() {
     subject: "",
     message: "",
   });
+  // Inline form feedback (Daraz-style, no popup).
+  const [formError, setFormError] = useState<string | null>(null);
+  const [mailOpened, setMailOpened] = useState(false);
 
   const { data: settings } = useQuery({
     queryKey: ["site-settings"],
@@ -52,18 +54,21 @@ export default function ContactPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setMailOpened(false);
 
     if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
-      toast.error("Please fill in your name, email and message");
+      setFormError("Please fill in your name, email and message.");
       return;
     }
 
     if (!storeEmail) {
-      toast.error("Email is not configured yet", {
-        description: "Please reach us on the phone number listed here.",
-      });
+      setFormError(
+        "Email is not configured yet — please reach us on the phone number listed here."
+      );
       return;
     }
+
+    setFormError(null);
 
     const subject = encodeURIComponent(
       form.subject.trim() || `Website enquiry from ${form.name}`
@@ -74,9 +79,7 @@ export default function ContactPage() {
 
     // Opens the visitor's mail client with everything pre-filled
     window.location.href = `mailto:${storeEmail}?subject=${subject}&body=${body}`;
-    toast.success("Opening your email app", {
-      description: `Your message will be sent to ${storeEmail}`,
-    });
+    setMailOpened(true);
   };
 
   return (
@@ -298,6 +301,23 @@ export default function ContactPage() {
           >
             <CardContent className="pt-6">
               <form onSubmit={handleSubmit} className="space-y-5">
+                {formError && (
+                  <p
+                    role="alert"
+                    className="rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive"
+                  >
+                    {formError}
+                  </p>
+                )}
+                {mailOpened && !formError && (
+                  <p
+                    role="status"
+                    className="rounded-xl border border-emerald-500/40 bg-emerald-500/5 px-4 py-3 text-sm font-medium text-emerald-700"
+                  >
+                    Opening your email app — your message will be sent to{" "}
+                    {storeEmail}.
+                  </p>
+                )}
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="name">Your name</Label>

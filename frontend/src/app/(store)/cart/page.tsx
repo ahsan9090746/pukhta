@@ -16,7 +16,6 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useCartStore } from "@/stores/cart-store";
 import { useWishlistStore } from "@/stores/wishlist-store";
 import { useStoreSettings } from "@/hooks/useStoreSettings";
-import { toast } from "sonner";
 
 export default function CartPage() {
   const queryClient = useQueryClient();
@@ -90,7 +89,7 @@ export default function CartPage() {
       toggleWishlist(product);
     }
     handleRemove(item);
-    toast.success("Moved to wishlist");
+    // The item visibly moves to the wishlist (badge updates) — no popup.
   };
 
   if (isAuthenticated && isLoading) {

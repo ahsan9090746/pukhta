@@ -113,7 +113,7 @@ export default function CreateProductPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Product created successfully");
-      router.push("/admin/products");
+      router.push("/admin9090746/products");
     },
     onError: (error: any) => {
       const detail = error.response?.data?.message || error.response?.data?.error || error.message || "Failed to create product";
@@ -215,7 +215,7 @@ export default function CreateProductPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Products", href: "/admin/products" }, { label: "Create Product" }]} />
+      <Breadcrumb items={[{ label: "Admin", href: "/admin9090746" }, { label: "Products", href: "/admin9090746/products" }, { label: "Create Product" }]} />
       <h1 className="text-3xl font-bold">Create Product</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

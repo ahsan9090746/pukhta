@@ -37,10 +37,10 @@ import WishlistItemsGrid from "@/components/wishlist-items-grid";
 
 import { useWishlistStore } from "@/stores/wishlist-store";
 import { useCartStore } from "@/stores/cart-store";
+import { useUIStore } from "@/stores/ui-store";
 import { useStoreSettings } from "@/hooks/useStoreSettings";
 import { getImageUrl } from "@/lib/utils";
 import { Product } from "@/types";
-import { toast } from "sonner";
 
 /** Total sellable stock, whether the product tracks `stock` or variants. */
 const stockOf = (product: any) =>
@@ -75,6 +75,7 @@ export default function WishlistPage() {
   const remove = useWishlistStore((state) => state.remove);
   const clear = useWishlistStore((state) => state.clear);
   const addItem = useCartStore((state) => state.addItem);
+  const setCartOpen = useUIStore((state) => state.setCartOpen);
   const { format } = useStoreSettings();
 
   const [mounted, setMounted] = useState(false);
@@ -82,6 +83,11 @@ export default function WishlistPage() {
   const [filter, setFilter] = useState<"all" | "in-stock" | "out-of-stock">("all");
   const [drawerProduct, setDrawerProduct] = useState<Product | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // Inline notice next to the batch buttons (no popup).
+  const [actionNotice, setActionNotice] = useState<{
+    ok: boolean;
+    message: string;
+  } | null>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -108,6 +114,7 @@ export default function WishlistPage() {
     filteredItems.every((item) => selectedIds.includes(item._id));
 
   const toggleSelect = (id: string) => {
+    setActionNotice(null);
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
@@ -125,10 +132,10 @@ export default function WishlistPage() {
 
   const removeSelected = () => {
     if (!selectedIds.length) return;
-    const count = selectedIds.length;
     selectedIds.forEach((id) => remove(id));
     setSelectedIds([]);
-    toast.success(`Removed ${count} ${count === 1 ? "item" : "items"} from wishlist`);
+    // Counts update visibly — no popup needed.
+    setActionNotice(null);
   };
 
   const addSelectedToCart = () => {
@@ -136,7 +143,10 @@ export default function WishlistPage() {
       (p) => selectedIds.includes(p._id) && stockOf(p) > 0
     );
     if (!targetItems.length) {
-      toast.error("None of the selected items are currently in stock");
+      setActionNotice({
+        ok: false,
+        message: "None of the selected items are currently in stock.",
+      });
       return;
     }
 
@@ -158,11 +168,9 @@ export default function WishlistPage() {
       });
     });
 
-    toast.success(
-      `Added ${targetItems.length} ${
-        targetItems.length === 1 ? "pair" : "pairs"
-      } to your cart!`
-    );
+    setActionNotice(null);
+    // Amazon-style: the cart drawer itself is the confirmation.
+    setCartOpen(true);
   };
 
   const handleOpenOptions = (product: Product) => {
@@ -245,7 +253,8 @@ export default function WishlistPage() {
                         onClick={() => {
                           clear();
                           setSelectedIds([]);
-                          toast.success("Wishlist cleared");
+                          // The empty state below is the confirmation.
+                          setActionNotice(null);
                         }}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
@@ -385,6 +394,11 @@ export default function WishlistPage() {
                     Remove
                   </Button>
                 </>
+              )}
+              {actionNotice && !actionNotice.ok && (
+                <p role="alert" className="w-full text-xs font-medium text-destructive">
+                  {actionNotice.message}
+                </p>
               )}
             </div>
           </div>

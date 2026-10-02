@@ -6,10 +6,14 @@ import { QueryProvider } from "@/providers/query-provider";
 import { SocketProvider } from "@/providers/socket-provider";
 import { Toaster } from "sonner";
 import AppShell from "@/components/layout/app-shell";
+import { getSiteUrl } from "@/lib/site-url";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  // Absolute base so relative canonical/OG URLs (e.g. "/blog") resolve to
+  // full https URLs everywhere. Falls back to localhost in development.
+  metadataBase: new URL(getSiteUrl()),
   title: {
     default: "StepUp Premium Footwear",
     template: "%s | StepUp Premium Footwear",

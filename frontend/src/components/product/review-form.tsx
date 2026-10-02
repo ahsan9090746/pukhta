@@ -10,8 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { Loader2, Star } from "lucide-react";
+import { CheckCircle2, Loader2, Star } from "lucide-react";
 
 interface ReviewFormProps {
   productId: string;
@@ -44,6 +43,10 @@ export default function ReviewForm({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [saveDetails, setSaveDetails] = useState(false);
+  // Inline field + submit feedback (no popup).
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
   // Restore the "saved for next time" details
   useEffect(() => {
@@ -77,41 +80,34 @@ export default function ReviewForm({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reviews", productId] });
       queryClient.invalidateQueries({ queryKey: ["product"] });
-      toast.success("Review submitted", {
-        description: "Thanks! Your review is awaiting moderation.",
-      });
       setRating(0);
       setHoveredRating(0);
       setComment("");
+      setSubmitError(null);
+      setSubmitted(true);
     },
     onError: (error: any) => {
-      toast.error("Could not submit review", {
-        description:
-          error.response?.data?.message ||
-          "Something went wrong. Please try again.",
-      });
+      setSubmitted(false);
+      setSubmitError(
+        error.response?.data?.message ||
+          "Something went wrong. Please try again."
+      );
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitted(false);
+    setSubmitError(null);
 
-    if (rating === 0) {
-      toast.error("Please select a rating");
-      return;
-    }
-    if (!comment.trim()) {
-      toast.error("Please write your review");
-      return;
-    }
-    if (!name.trim()) {
-      toast.error("Please enter your name");
-      return;
-    }
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
+    const nextErrors: Record<string, string> = {};
+    if (rating === 0) nextErrors.rating = "Please select a rating.";
+    if (!comment.trim()) nextErrors.comment = "Please write your review.";
+    if (!name.trim()) nextErrors.name = "Please enter your name.";
+    if (!/^\S+@\S+\.\S+$/.test(email.trim()))
+      nextErrors.email = "Please enter a valid email address.";
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
 
     try {
       if (saveDetails) {
@@ -160,7 +156,11 @@ export default function ReviewForm({
               key={star}
               type="button"
               aria-label={`${star} star${star > 1 ? "s" : ""}`}
-              onClick={() => setRating(star)}
+              onClick={() => {
+                setRating(star);
+                if (fieldErrors.rating)
+                  setFieldErrors((p) => ({ ...p, rating: "" }));
+              }}
               onMouseEnter={() => setHoveredRating(star)}
               onMouseLeave={() => setHoveredRating(0)}
               className="transition-transform hover:scale-110"
@@ -181,6 +181,11 @@ export default function ReviewForm({
             </span>
           )}
         </div>
+        {fieldErrors.rating && (
+          <p role="alert" className="text-xs font-medium text-destructive">
+            {fieldErrors.rating}
+          </p>
+        )}
       </div>
 
       {/* Review */}
@@ -191,11 +196,20 @@ export default function ReviewForm({
         <Textarea
           id="review-comment"
           value={comment}
-          onChange={(e) => setComment(e.target.value)}
+          onChange={(e) => {
+            setComment(e.target.value);
+            if (fieldErrors.comment)
+              setFieldErrors((p) => ({ ...p, comment: "" }));
+          }}
           rows={6}
           placeholder="Share the fit, comfort, quality and how you use this product…"
           className="min-h-[150px] rounded-2xl"
         />
+        {fieldErrors.comment && (
+          <p role="alert" className="text-xs font-medium text-destructive">
+            {fieldErrors.comment}
+          </p>
+        )}
       </div>
 
       {/* Name + email */}
@@ -206,10 +220,18 @@ export default function ReviewForm({
         <Input
           id="review-name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (fieldErrors.name) setFieldErrors((p) => ({ ...p, name: "" }));
+          }}
           placeholder="Your name"
           className="h-11 rounded-full px-4"
         />
+        {fieldErrors.name && (
+          <p role="alert" className="text-xs font-medium text-destructive">
+            {fieldErrors.name}
+          </p>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -220,10 +242,19 @@ export default function ReviewForm({
           id="review-email"
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (fieldErrors.email)
+              setFieldErrors((p) => ({ ...p, email: "" }));
+          }}
           placeholder="you@example.com"
           className="h-11 rounded-full px-4"
         />
+        {fieldErrors.email && (
+          <p role="alert" className="text-xs font-medium text-destructive">
+            {fieldErrors.email}
+          </p>
+        )}
       </div>
 
       <label className="flex cursor-pointer items-start gap-2.5 text-sm text-muted-foreground">
@@ -252,6 +283,24 @@ export default function ReviewForm({
           "Submit"
         )}
       </Button>
+
+      {submitError && (
+        <p
+          role="alert"
+          className="rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive"
+        >
+          {submitError}
+        </p>
+      )}
+      {submitted && !submitError && (
+        <p
+          role="status"
+          className="flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/5 px-4 py-3 text-sm font-medium text-emerald-700"
+        >
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          Review submitted — thanks! It will appear after moderation.
+        </p>
+      )}
     </form>
   );
 }

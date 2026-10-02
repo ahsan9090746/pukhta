@@ -12,7 +12,7 @@ import BottomNav from "@/components/layout/bottom-nav";
  */
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAdminRoute = pathname?.startsWith("/admin");
+  const isAdminRoute = pathname?.startsWith("/admin9090746");
 
   if (isAdminRoute) {
     return <>{children}</>;

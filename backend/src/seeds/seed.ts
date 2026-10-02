@@ -904,7 +904,7 @@ export async function seed(): Promise<void> {
       orderNumber: `FW26${(i + 1).toString().padStart(4, '0')}`,
       items: orderItems,
       shippingAddress: shippingAddr,
-      paymentMethod: i % 2 === 0 ? 'stripe' : 'paypal',
+      paymentMethod: i % 2 === 0 ? 'cod' : 'bank_deposit',
       paymentStatus: orderStatuses[statusIdx].paymentStatus,
       orderStatus: orderStatuses[statusIdx].orderStatus,
       subtotal,

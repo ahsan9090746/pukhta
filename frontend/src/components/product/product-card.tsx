@@ -10,7 +10,6 @@ import { Product } from "@/types";
 import QuickViewDialog from "@/components/product/quick-view-dialog";
 import ChooseOptionsDrawer from "@/components/product/choose-options-drawer";
 import { useWishlistStore } from "@/stores/wishlist-store";
-import { toast } from "sonner";
 
 interface ProductCardProps {
   product: Product;
@@ -34,11 +33,10 @@ export default function ProductCard({
   const handleWishlistClick = () => {
     if (onRemoveFromWishlist) {
       onRemoveFromWishlist();
-      toast.success("Removed from wishlist");
       return;
     }
-    const added = toggleWishlist(product);
-    toast.success(added ? "Added to wishlist" : "Removed from wishlist");
+    // The heart fill is the confirmation (Amazon/Daraz show no popup here).
+    toggleWishlist(product);
   };
 
   const [quickOpen, setQuickOpen] = useState(false);

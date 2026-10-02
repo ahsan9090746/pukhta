@@ -16,8 +16,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import Breadcrumb from "@/components/common/breadcrumb";
-import { toast } from "sonner";
-import { Loader2, User, Lock, MapPin, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Loader2, User, Lock, MapPin, Plus, Trash2 } from "lucide-react";
+
+type ActionStatus = { ok: boolean; message: string } | null;
+
+/** Inline success/error line under a form (no popup). */
+function StatusLine({ status }: { status: ActionStatus }) {
+  if (!status) return null;
+  if (status.ok) {
+    return (
+      <p
+        role="status"
+        className="flex items-center gap-2 text-sm font-medium text-emerald-700"
+      >
+        <CheckCircle2 className="h-4 w-4 shrink-0" />
+        {status.message}
+      </p>
+    );
+  }
+  return (
+    <p role="alert" className="text-sm font-medium text-destructive">
+      {status.message}
+    </p>
+  );
+}
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -43,6 +65,10 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
   const { user, setUser } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
+  // Inline per-section feedback (Amazon account-page style, no popup).
+  const [profileStatus, setProfileStatus] = useState<ActionStatus>(null);
+  const [passwordStatus, setPasswordStatus] = useState<ActionStatus>(null);
+  const [addressStatus, setAddressStatus] = useState<ActionStatus>(null);
 
   const {
     register: registerProfile,
@@ -77,11 +103,12 @@ export default function ProfilePage() {
     onSuccess: (response) => {
       setUser(response.data.data.user);
       setIsEditing(false);
-      toast.success("Profile updated");
+      setProfileStatus({ ok: true, message: "Profile updated." });
     },
     onError: (error: any) => {
-      toast.error("Error", {
-        description: error.response?.data?.message || "Failed to update",
+      setProfileStatus({
+        ok: false,
+        message: error.response?.data?.message || "Failed to update profile.",
       });
     },
   });
@@ -91,11 +118,13 @@ export default function ProfilePage() {
       api.put("/auth/change-password", data),
     onSuccess: () => {
       resetPassword();
-      toast.success("Password changed successfully");
+      setPasswordStatus({ ok: true, message: "Password changed successfully." });
     },
     onError: (error: any) => {
-      toast.error("Error", {
-        description: error.response?.data?.message || "Failed to change password",
+      setPasswordStatus({
+        ok: false,
+        message:
+          error.response?.data?.message || "Failed to change password.",
       });
     },
   });
@@ -104,7 +133,10 @@ export default function ProfilePage() {
     mutationFn: (id: string) => api.delete(`/addresses/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["addresses"] });
-      toast.success("Address deleted");
+      setAddressStatus({ ok: true, message: "Address deleted." });
+    },
+    onError: () => {
+      setAddressStatus({ ok: false, message: "Could not delete address." });
     },
   });
 
@@ -157,6 +189,7 @@ export default function ProfilePage() {
                 onSubmit={handleSubmitProfile(onUpdateProfile)}
                 className="space-y-4"
               >
+                <StatusLine status={profileStatus} />
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
                   <Input id="name" {...registerProfile("name")} disabled={!isEditing} />
@@ -208,6 +241,7 @@ export default function ProfilePage() {
                 onSubmit={handleSubmitPassword(onChangePassword)}
                 className="space-y-4 max-w-md"
               >
+                <StatusLine status={passwordStatus} />
                 <div className="space-y-2">
                   <Label htmlFor="currentPassword">Current Password</Label>
                   <Input
@@ -268,6 +302,9 @@ export default function ProfilePage() {
               </Button>
             </CardHeader>
             <CardContent>
+              <div className="mb-3">
+                <StatusLine status={addressStatus} />
+              </div>
               {addressesLoading ? (
                 <div className="space-y-4">
                   {[...Array(2)].map((_, i) => (

@@ -4,14 +4,15 @@ import { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
   Heart,
   Share2,
   ZoomIn,
 } from "lucide-react";
-import { toast } from "sonner";
 import { getImageUrl, cn } from "@/lib/utils";
+import { copyText } from "@/lib/payment";
 
 interface ProductGalleryProps {
   images: string[];
@@ -38,6 +39,7 @@ export default function ProductGallery({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const list = images.length ? images : [""];
   const safeIndex = Math.min(selectedIndex, list.length - 1);
@@ -70,8 +72,11 @@ export default function ProductGallery({
         await navigator.share({ title: productName, url });
         return;
       }
-      await navigator.clipboard.writeText(url);
-      toast.success("Product link copied");
+      // Icon swaps to a check on success — no popup needed.
+      if (await copyText(url)) {
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2000);
+      }
     } catch {
       // Sharing was cancelled — nothing to do.
     }
@@ -196,10 +201,14 @@ export default function ProductGallery({
               <button
                 type="button"
                 onClick={handleShare}
-                aria-label="Share this product"
+                aria-label={linkCopied ? "Link copied" : "Share this product"}
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-background/90 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:text-brand-gold"
               >
-                <Share2 className="h-4 w-4" />
+                {linkCopied ? (
+                  <Check className="h-4 w-4 text-emerald-600" />
+                ) : (
+                  <Share2 className="h-4 w-4" />
+                )}
               </button>
             </div>
           )}

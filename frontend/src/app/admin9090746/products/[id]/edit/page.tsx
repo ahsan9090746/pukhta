@@ -136,7 +136,7 @@ const updateProductMutation = useMutation({
       queryClient.invalidateQueries({ queryKey: ["product"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Product updated successfully");
-      router.push("/admin/products");
+      router.push("/admin9090746/products");
     },
     onError: (error: any) => {
       const detail = error.response?.data?.message || error.response?.data?.error || error.message || "Failed to update product";
@@ -232,7 +232,7 @@ const updateProductMutation = useMutation({
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Products", href: "/admin/products" }, { label: "Edit Product" }]} />
+      <Breadcrumb items={[{ label: "Admin", href: "/admin9090746" }, { label: "Products", href: "/admin9090746/products" }, { label: "Edit Product" }]} />
       <h1 className="text-3xl font-bold">Edit Product</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

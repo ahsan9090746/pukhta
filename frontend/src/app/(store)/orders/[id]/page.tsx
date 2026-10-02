@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { PAYMENT_LABELS } from "@/lib/payment";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -205,7 +206,7 @@ export default function OrderDetailPage() {
               Payment Info
             </h2>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p className="capitalize">Method: {order.paymentMethod}</p>
+              <p className="capitalize">Method: {PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod}</p>
               <p className="capitalize">Status: {order.paymentStatus}</p>
             </div>
           </div>

@@ -23,6 +23,20 @@ export const config = {
     from: process.env.SMTP_FROM || 'noreply@footware.com',
   },
 
+  email: {
+    // Master switch. Default ON — set EMAIL_ENABLED=false to silence
+    // all outgoing mail (useful for local dev without SMTP creds).
+    enabled: process.env.EMAIL_ENABLED !== 'false',
+    // Inbox that receives new-order alerts. Falls back to ADMIN_EMAIL,
+    // then to the SMTP login itself, so there is always a sane default.
+    ownerEmail:
+      process.env.OWNER_EMAIL ||
+      process.env.ADMIN_EMAIL ||
+      process.env.SMTP_USER ||
+      '',
+    adminEmail: process.env.ADMIN_EMAIL || process.env.SMTP_USER || '',
+  },
+
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
     apiKey: process.env.CLOUDINARY_API_KEY || '',
@@ -47,11 +61,4 @@ export const config = {
   corsOrigin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(','),
 
   logLevel: process.env.LOG_LEVEL || 'info',
-
-  whatsapp: {
-    enabled: process.env.WHATSAPP_ENABLED === 'true',
-    provider: process.env.WHATSAPP_PROVIDER || 'callmebot',
-    ownerPhone: process.env.WHATSAPP_OWNER_PHONE || '',
-    callmebotApiKey: process.env.CALLMEBOT_API_KEY || '',
-  },
 };

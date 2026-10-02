@@ -4,29 +4,29 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
-import { Mail } from "lucide-react";
+import { CheckCircle2, Mail } from "lucide-react";
+
+type NewsletterStatus = "idle" | "done" | "error";
 
 export default function Newsletter() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  // Inline confirmation under the form (no popup).
+  const [status, setStatus] = useState<NewsletterStatus>("idle");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
 
     setIsLoading(true);
+    setStatus("idle");
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      toast.success("Subscribed!", {
-        description: "You've been added to our newsletter.",
-      });
+      setStatus("done");
       setEmail("");
     } catch {
-      toast.error("Error", {
-        description: "Something went wrong. Please try again.",
-      });
+      setStatus("error");
     } finally {
       setIsLoading(false);
     }
@@ -65,6 +65,20 @@ export default function Newsletter() {
               {isLoading ? "Subscribing..." : "Subscribe"}
             </Button>
           </form>
+          {status === "done" && (
+            <p
+              role="status"
+              className="mx-auto mt-4 flex max-w-md items-center justify-center gap-2 text-sm font-medium text-emerald-700"
+            >
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              Subscribed — you are on the list for new arrivals and offers.
+            </p>
+          )}
+          {status === "error" && (
+            <p role="alert" className="mx-auto mt-4 max-w-md text-sm font-medium text-destructive">
+              Something went wrong. Please try again.
+            </p>
+          )}
           <p className="text-xs text-muted-foreground mt-4">
             By subscribing, you agree to our Privacy Policy. Unsubscribe at any time.
           </p>

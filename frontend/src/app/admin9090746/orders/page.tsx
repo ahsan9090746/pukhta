@@ -245,7 +245,7 @@ export default function AdminOrdersPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/admin/orders/${order._id}`}>
+                      <Link href={`/admin9090746/orders/${order._id}`}>
                         <Button variant="ghost" size="sm">
                           <Eye className="h-4 w-4" />
                         </Button>

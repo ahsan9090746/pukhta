@@ -102,6 +102,10 @@ const orderSchema = new Schema<IOrder>(
     paymentMethod: {
       type: String,
       required: [true, 'Payment method is required'],
+      // New orders are restricted to cod/bank_deposit by request validation;
+      // legacy values stay in the enum so old orders can still be re-saved
+      // (e.g. status updates) without tripping validation.
+      enum: ['cod', 'bank_deposit', 'card', 'stripe', 'paypal'],
     },
     paymentStatus: {
       type: String,

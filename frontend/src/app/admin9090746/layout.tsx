@@ -33,17 +33,30 @@ import {
 import { cn } from "@/lib/utils";
 
 const menuItems = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-  { label: "Products", href: "/admin/products", icon: Package },
-  { label: "Categories", href: "/admin/categories", icon: FolderTree },
-  { label: "Orders", href: "/admin/orders", icon: ShoppingCart },
-  { label: "Staff", href: "/admin/staff", icon: UserCog },
-  { label: "Banners", href: "/admin/banners", icon: Image },
-  { label: "Shorts", href: "/admin/shorts", icon: Film },
-  { label: "Reviews", href: "/admin/reviews", icon: Star },
-  { label: "Manage Stock", href: "/admin/inventory", icon: Warehouse },
-  { label: "Settings", href: "/admin/settings", icon: Settings },
+  { label: "Dashboard", href: "/admin9090746", icon: LayoutDashboard },
+  { label: "Analytics", href: "/admin9090746/analytics", icon: BarChart3 },
+  { label: "Products", href: "/admin9090746/products", icon: Package },
+  { label: "Categories", href: "/admin9090746/categories", icon: FolderTree },
+  { label: "Orders", href: "/admin9090746/orders", icon: ShoppingCart },
+  { label: "Staff", href: "/admin9090746/staff", icon: UserCog },
+  { label: "Banners", href: "/admin9090746/banners", icon: Image },
+  { label: "Shorts", href: "/admin9090746/shorts", icon: Film },
+  { label: "Reviews", href: "/admin9090746/reviews", icon: Star },
+  { label: "Manage Stock", href: "/admin9090746/inventory", icon: Warehouse },
+  { label: "Settings", href: "/admin9090746/settings", icon: Settings },
+];
+
+/**
+ * Menu entries a `staff`-role user must not see — the backend denies these
+ * with 403 (analytics.view / staff.manage / banners.manage / settings.manage),
+ * so hiding them keeps the panel clean instead of showing dead links.
+ */
+const staffHiddenHrefs = [
+  "/admin9090746/analytics",
+  "/admin9090746/staff",
+  "/admin9090746/banners",
+  "/admin9090746/shorts",
+  "/admin9090746/settings",
 ];
 
 export default function AdminLayout({
@@ -58,7 +71,7 @@ export default function AdminLayout({
   const [collapsed, setCollapsed] = useState(false);
   const [checking, setChecking] = useState(true);
 
-  const isAdminLogin = pathname === "/admin/login";
+  const isAdminLogin = pathname === "/admin9090746/login";
 
   // Auth guard: only admin/staff/super-admin; customers -> admin login
   useEffect(() => {
@@ -74,7 +87,7 @@ export default function AdminLayout({
         ?.split("=")[1];
 
       if (!token) {
-        router.replace("/admin/login");
+        router.replace("/admin9090746/login");
         return;
       }
 
@@ -85,7 +98,7 @@ export default function AdminLayout({
           const fetchedUser = res.data.data?.user ?? res.data.data;
           if (fetchedUser?.role === "customer") {
             logout();
-            router.replace("/admin/login");
+            router.replace("/admin9090746/login");
             return;
           }
           setUser(fetchedUser);
@@ -98,12 +111,12 @@ export default function AdminLayout({
             return;
           }
           logout();
-          router.replace("/admin/login");
+          router.replace("/admin9090746/login");
           return;
         }
       } else if (user.role === "customer") {
         logout();
-        router.replace("/admin/login");
+        router.replace("/admin9090746/login");
         return;
       }
 
@@ -178,8 +191,9 @@ export default function AdminLayout({
                   {menuItems
                     .filter(
                       (item) =>
-                        // Staff lack the 'analytics.view' permission — hide it for them
-                        item.href !== "/admin/analytics" || user?.role !== "staff"
+                        // Staff lack analytics.view / staff.manage / banners.manage /
+                        // settings.manage — hide those links instead of dead ends.
+                        user?.role !== "staff" || !staffHiddenHrefs.includes(item.href)
                     )
                     .map((item) => {
                     const isActive = pathname === item.href;
@@ -247,7 +261,7 @@ export default function AdminLayout({
               size="icon"
               onClick={() => {
                 logout();
-                router.replace("/admin/login");
+                router.replace("/admin9090746/login");
               }}
               className="text-muted-foreground hover:text-destructive"
               title="Logout"

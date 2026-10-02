@@ -121,7 +121,7 @@ describe('Order Endpoints', () => {
         .send({
           items: [{ product: productId, quantity: 2 }],
           shippingAddress: sampleShippingAddress,
-          paymentMethod: 'stripe',
+          paymentMethod: 'cod',
         })
         .expect(201);
 
@@ -130,11 +130,42 @@ describe('Order Endpoints', () => {
       expect(res.body.data.order.orderNumber).toBeDefined();
       expect(res.body.data.order.items).toHaveLength(1);
       expect(res.body.data.order.shippingAddress.fullName).toBe('John Order');
-      expect(res.body.data.order.paymentMethod).toBe('stripe');
+      expect(res.body.data.order.paymentMethod).toBe('cod');
       expect(res.body.data.order.orderStatus).toBe('pending');
       expect(res.body.data.order.subtotal).toBeGreaterThan(0);
       expect(res.body.data.order.total).toBeGreaterThan(0);
       orderId = res.body.data.order._id;
+    });
+
+    it('should create an order with bank_deposit payment', async () => {
+      if (!productId) return;
+
+      const res = await request(app)
+        .post(`${API_URL}/orders`)
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({
+          items: [{ product: productId, quantity: 1 }],
+          shippingAddress: sampleShippingAddress,
+          paymentMethod: 'bank_deposit',
+        })
+        .expect(201);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.order.paymentMethod).toBe('bank_deposit');
+    });
+
+    it('should reject an unsupported payment method', async () => {
+      const res = await request(app)
+        .post(`${API_URL}/orders`)
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({
+          items: [{ product: productId, quantity: 1 }],
+          shippingAddress: sampleShippingAddress,
+          paymentMethod: 'bitcoin',
+        })
+        .expect(422);
+
+      expect(res.body.success).toBe(false);
     });
 
     it('should not create order without authentication', async () => {
@@ -154,7 +185,7 @@ describe('Order Endpoints', () => {
         .set('Authorization', `Bearer ${customerToken}`)
         .send({
           items: [{ product: productId, quantity: 1 }],
-          paymentMethod: 'stripe',
+          paymentMethod: 'cod',
         })
         .expect(422);
 
@@ -279,7 +310,7 @@ describe('Order Endpoints', () => {
         .send({
           items: [{ product: productId, quantity: 1 }],
           shippingAddress: sampleShippingAddress,
-          paymentMethod: 'paypal',
+          paymentMethod: 'cod',
         });
 
       const cancelOrderId = createRes.body.data.order._id;

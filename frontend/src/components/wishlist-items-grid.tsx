@@ -7,7 +7,6 @@ import { Check, PackageCheck, PackageX, ShoppingBag, Square, Trash2 } from "luci
 import { Button } from "@/components/ui/button";
 import { getImageUrl } from "@/lib/utils";
 import { Product } from "@/types";
-import { toast } from "sonner";
 
 interface WishlistItemsGridProps {
   items: Product[];
@@ -84,8 +83,8 @@ export default function WishlistItemsGrid({
                 <button
                   type="button"
                   onClick={() => {
+                    // The card animating out is the confirmation (no popup).
                     onRemove(product._id);
-                    toast.success("Removed from wishlist");
                   }}
                   aria-label="Remove from wishlist"
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-all hover:bg-destructive hover:text-white"

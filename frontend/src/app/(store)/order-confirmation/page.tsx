@@ -19,7 +19,13 @@ import OrderSuccessAnimation from "@/components/checkout/order-success-animation
 import Breadcrumb from "@/components/common/breadcrumb";
 import EmptyState from "@/components/common/empty-state";
 import { useStoreSettings } from "@/hooks/useStoreSettings";
-import { toast } from "sonner";
+import SupportCard from "@/components/common/support-card";
+import {
+  BANK_DETAILS,
+  PAYMENT_LABELS,
+  PAYMENT_METHOD_BANK_DEPOSIT,
+  copyText,
+} from "@/lib/payment";
 
 interface PlacedOrderLine {
   name: string;
@@ -38,11 +44,6 @@ interface PlacedOrder {
 
 const STORAGE_KEY = "order-confirmation";
 
-const PAYMENT_LABELS: Record<string, string> = {
-  cod: "Cash on Delivery",
-  card: "Credit / Debit Card",
-};
-
 /** What happens after the order is placed — process facts, no promises. */
 const NEXT_STEPS = [
   {
@@ -53,7 +54,7 @@ const NEXT_STEPS = [
   {
     icon: CreditCard,
     title: "Payment",
-    text: "Pay cash on delivery, or online if you chose card.",
+    text: "Pay cash on delivery, or via bank deposit if you chose it.",
   },
   {
     icon: Truck,
@@ -63,11 +64,15 @@ const NEXT_STEPS = [
 ];
 
 export default function OrderConfirmationPage() {
-  const { format } = useStoreSettings();
+  const { format, settings } = useStoreSettings();
   const [order, setOrder] = useState<PlacedOrder | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [celebrate, setCelebrate] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Shown under the code box when auto-copy is blocked by the browser.
+  const [copyFailed, setCopyFailed] = useState(false);
+  // Which bank field was just copied ("Account Number" / "IBAN" / null).
+  const [copiedBankField, setCopiedBankField] = useState<string | null>(null);
 
   useEffect(() => {
     let orderNumber = "";
@@ -102,13 +107,20 @@ export default function OrderConfirmationPage() {
 
   const copyOrderCode = async () => {
     if (!order) return;
-    try {
-      await navigator.clipboard.writeText(order.orderNumber);
+    if (await copyText(order.orderNumber)) {
+      // The button swapping to "Copied" is the confirmation (no popup).
       setCopied(true);
-      toast.success("Order code copied");
+      setCopyFailed(false);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Could not copy — please note it down manually");
+    } else {
+      setCopyFailed(true);
+    }
+  };
+
+  const copyBankField = async (label: string, value: string) => {
+    if (await copyText(value)) {
+      setCopiedBankField(label);
+      setTimeout(() => setCopiedBankField(null), 2000);
     }
   };
 
@@ -175,7 +187,9 @@ export default function OrderConfirmationPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="container py-8"
+        // Extra bottom space on phones so the fixed bottom nav never covers
+        // the buttons; desktop keeps the old spacing.
+        className="container py-8 pb-28 md:pb-8"
       >
         <Breadcrumb
           items={[{ label: "Home", href: "/" }, { label: "Order Confirmation" }]}
@@ -241,6 +255,12 @@ export default function OrderConfirmationPage() {
                   )}
                 </Button>
               </div>
+              {copyFailed && (
+                <p role="alert" className="mt-2 text-xs text-muted-foreground">
+                  Auto-copy is blocked in this browser — long-press the code
+                  above to copy it manually.
+                </p>
+              )}
 
               <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
                 <div className="rounded-2xl border p-4">
@@ -281,6 +301,58 @@ export default function OrderConfirmationPage() {
                   <Mail className="h-3.5 w-3.5 text-brand-gold" />
                   Order details will be sent to {order.email}
                 </p>
+              )}
+
+              {order.paymentMethod === PAYMENT_METHOD_BANK_DEPOSIT && (
+                <div className="mt-5 space-y-2 rounded-2xl border border-brand-gold/30 bg-brand-gold/[0.04] p-4">
+                  <p className="text-sm font-semibold">
+                    Complete your bank deposit to {BANK_DETAILS.bank}
+                  </p>
+                  <dl className="space-y-2 text-sm">
+                    {(
+                      [
+                        ["Account Title", BANK_DETAILS.title, false],
+                        ["Account Number", BANK_DETAILS.account, true],
+                        ["IBAN", BANK_DETAILS.iban, true],
+                      ] as const
+                    ).map(([label, value, copyable]) => (
+                      <div
+                        key={label}
+                        className="flex items-center justify-between gap-3 rounded-xl bg-background px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <dt className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                            {label}
+                          </dt>
+                          <dd className="truncate font-mono font-semibold">
+                            {value}
+                          </dd>
+                        </div>
+                        {copyable && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="shrink-0"
+                            title={copiedBankField === label ? `${label} copied` : `Copy ${label}`}
+                            aria-label={copiedBankField === label ? `${label} copied` : `Copy ${label}`}
+                            onClick={() => copyBankField(label, value)}
+                          >
+                            {copiedBankField === label ? (
+                              <Check className="h-4 w-4 text-emerald-600" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    Transfer the exact total shown above, then share the receipt
+                    screenshot with us so we can dispatch your order quickly.
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -351,6 +423,13 @@ export default function OrderConfirmationPage() {
               </Link>
             </Button>
           </div>
+
+          <SupportCard
+            phone={settings?.storePhone || ""}
+            email={settings?.storeEmail || ""}
+            orderNumber={order.orderNumber}
+            className="mt-6"
+          />
         </div>
       </motion.div>
     </>

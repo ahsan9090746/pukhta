@@ -31,7 +31,7 @@ export default function AdminLoginPage() {
   // Already logged in as admin/staff? -> straight to panel
   useEffect(() => {
     if (isAuthenticated && user && user.role !== "customer") {
-      router.replace("/admin");
+      router.replace("/admin9090746");
     }
   }, [isAuthenticated, user, router]);
 
@@ -63,7 +63,7 @@ export default function AdminLoginPage() {
       toast.success("Welcome to Admin Panel", {
         description: `Logged in as ${user.name} (${user.role})`,
       });
-      router.push("/admin");
+      router.push("/admin9090746");
     } catch (error: any) {
       toast.error("Login failed", {
         description:

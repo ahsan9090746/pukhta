@@ -32,10 +32,10 @@ api.interceptors.response.use(
       if (typeof window !== "undefined") {
         // Admin session expired -> back to admin login. Storefront is guest-only
         // now (no customer login page) — just clear the stale token and stay put.
-        const isAdminArea = window.location.pathname.startsWith("/admin");
+        const isAdminArea = window.location.pathname.startsWith("/admin9090746");
         document.cookie = "token=; path=/; max-age=0";
         if (isAdminArea) {
-          window.location.href = "/admin/login";
+          window.location.href = "/admin9090746/login";
         }
       }
     }

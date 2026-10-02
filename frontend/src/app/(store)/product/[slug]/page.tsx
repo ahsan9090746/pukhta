@@ -30,9 +30,9 @@ import RedirectHome from "@/components/common/redirect-home";
 import { getSocialLinks } from "@/lib/social-links";
 import { useCartStore } from "@/stores/cart-store";
 import { useWishlistStore } from "@/stores/wishlist-store";
+import { useUIStore } from "@/stores/ui-store";
 import { normalizeSizeLabel } from "@/lib/shoe-sizes";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import {
   Heart,
   Minus,
@@ -121,10 +121,13 @@ export default function ProductDetailPage() {
   const addItem = useCartStore((s) => s.addItem);
   const wishlistItems = useWishlistStore((s) => s.items);
   const toggleWishlist = useWishlistStore((s) => s.toggle);
+  const setCartOpen = useUIStore((s) => s.setCartOpen);
 
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
+  // Inline validation message under the selectors (Daraz-style, no popup).
+  const [selectionError, setSelectionError] = useState<string | null>(null);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", params.slug],
@@ -164,13 +167,14 @@ export default function ProductDetailPage() {
   const validateSelection = (): boolean => {
     if (!product) return false;
     if (getUniqueSizes(product).length > 0 && !selectedSize) {
-      toast.error("Please select a size");
+      setSelectionError("Please select a size");
       return false;
     }
     if (!selectedColor && getUniqueColors(product).length > 0) {
-      toast.error("Please select a color");
+      setSelectionError("Please select a color");
       return false;
     }
+    setSelectionError(null);
     return true;
   };
 
@@ -201,21 +205,21 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!validateSelection()) return;
     addItem(buildCartItem());
-    toast.success("Added to cart", { description: product.name });
+    // Amazon-style: the cart drawer itself is the confirmation.
+    setCartOpen(true);
   };
 
   const handleBuyNow = () => {
     if (!validateSelection()) return;
     addItem(buildCartItem());
-    toast.success("Added to cart", { description: product.name });
     // Login-free checkout — guests can order directly
     router.push("/checkout");
   };
 
   const handleAddToWishlist = () => {
     if (!product) return;
-    const added = toggleWishlist(product);
-    toast.success(added ? "Added to wishlist" : "Removed from wishlist");
+    // The heart fill + label swap below is the confirmation (no popup).
+    toggleWishlist(product);
   };
 
   const incrementQuantity = () => {
@@ -428,7 +432,10 @@ export default function ProductDetailPage() {
               </div>
               <Select
                 value={selectedSize || undefined}
-                onValueChange={setSelectedSize}
+                onValueChange={(v) => {
+                  setSelectedSize(v);
+                  setSelectionError(null);
+                }}
               >
                 <SelectTrigger className="h-11 w-full sm:w-72">
                   <SelectValue placeholder="Choose an option" />
@@ -464,9 +471,18 @@ export default function ProductDetailPage() {
               <ColorPicker
                 colors={colors}
                 selected={selectedColor}
-                onSelect={setSelectedColor}
+                onSelect={(v) => {
+                  setSelectedColor(v);
+                  setSelectionError(null);
+                }}
               />
             </div>
+          )}
+
+          {selectionError && (
+            <p role="alert" className="text-sm font-medium text-destructive">
+              {selectionError}
+            </p>
           )}
 
           {/* Quantity + actions */}

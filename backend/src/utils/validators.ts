@@ -170,6 +170,9 @@ export const validateOrder = [
   body('shippingAddress.postalCode').trim().notEmpty().withMessage('Postal code is required'),
   body('shippingAddress.country').trim().notEmpty().withMessage('Country is required'),
   body('paymentMethod').trim().notEmpty().withMessage('Payment method is required'),
+  body('paymentMethod')
+    .isIn(['cod', 'bank_deposit'])
+    .withMessage('Payment method must be cod or bank_deposit'),
   handleValidationErrors,
 ];
 

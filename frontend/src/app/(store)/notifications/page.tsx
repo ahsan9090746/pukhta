@@ -10,7 +10,6 @@ import Breadcrumb from "@/components/common/breadcrumb";
 import { Bell, Check, CheckCheck } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
@@ -31,8 +30,8 @@ export default function NotificationsPage() {
   const markAllReadMutation = useMutation({
     mutationFn: () => api.patch("/notifications/read-all"),
     onSuccess: () => {
+      // Dots + "unread" count clear visibly — no popup needed.
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      toast.success("All notifications marked as read");
     },
   });
 

@@ -7,11 +7,13 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { toast } from "sonner";
 import {
   Banknote,
   Check,
+  CircleAlert,
+  Copy,
   CreditCard,
+  Landmark,
   Loader2,
   Lock,
   MapPin,
@@ -20,6 +22,12 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
+import {
+  BANK_DETAILS,
+  PAYMENT_METHOD_BANK_DEPOSIT,
+  PAYMENT_METHOD_COD,
+  copyText,
+} from "@/lib/payment";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,16 +56,16 @@ type AddressFormData = z.infer<typeof addressSchema>;
 
 const PAYMENT_OPTIONS = [
   {
-    value: "cod",
+    value: PAYMENT_METHOD_COD,
     title: "Cash on Delivery",
     description: "Pay in cash when your order arrives.",
     icon: Banknote,
   },
   {
-    value: "card",
-    title: "Credit / Debit Card",
-    description: "Pay online — our team confirms every order.",
-    icon: CreditCard,
+    value: PAYMENT_METHOD_BANK_DEPOSIT,
+    title: "Bank Deposit",
+    description: "Transfer to our Meezan Bank account.",
+    icon: Landmark,
   },
 ];
 
@@ -81,6 +89,10 @@ export default function CheckoutPage() {
     total: number;
   } | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  // Amazon-style inline problem box above the Place Order button (no popup).
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  // Which bank field was just copied ("Account Number" / "IBAN" / null).
+  const [copiedBankField, setCopiedBankField] = useState<string | null>(null);
 
   // Analytics: visitor reached the checkout flow (one event per session)
   useEffect(() => {
@@ -129,6 +141,7 @@ export default function CheckoutPage() {
 
   const placeOrder = async (data: AddressFormData) => {
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       const response = await api.post("/orders/guest", {
         items: items.map((item) => ({
@@ -185,12 +198,11 @@ export default function CheckoutPage() {
       setPlacedOrder({ orderNumber: order.orderNumber, total: order.total });
       setShowSuccess(true);
     } catch (error: any) {
-      toast.error("Error", {
-        description:
-          error.response?.data?.error ||
+      setSubmitError(
+        error.response?.data?.error ||
           error.response?.data?.message ||
-          "Failed to place order",
-      });
+          "Failed to place order. Please check your connection and try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -482,6 +494,66 @@ export default function CheckoutPage() {
                   })}
                 </RadioGroup>
 
+                {paymentMethod === PAYMENT_METHOD_BANK_DEPOSIT && (
+                  <div className="space-y-3 rounded-2xl border border-brand-gold/30 bg-brand-gold/[0.04] p-4">
+                    <p className="flex items-center gap-2 text-sm font-semibold">
+                      <Landmark className="h-4 w-4 text-brand-gold" />
+                      Deposit the total to this account
+                    </p>
+                    <dl className="space-y-2 text-sm">
+                      {(
+                        [
+                          ["Bank", BANK_DETAILS.bank, false],
+                          ["Account Title", BANK_DETAILS.title, false],
+                          ["Account Number", BANK_DETAILS.account, true],
+                          ["IBAN", BANK_DETAILS.iban, true],
+                        ] as const
+                      ).map(([label, value, copyable]) => (
+                        <div
+                          key={label}
+                          className="flex items-center justify-between gap-3 rounded-xl bg-background px-3 py-2"
+                        >
+                          <div className="min-w-0">
+                            <dt className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                              {label}
+                            </dt>
+                            <dd className="truncate font-mono font-semibold">
+                              {value}
+                            </dd>
+                          </div>
+                          {copyable && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="shrink-0"
+                              title={copiedBankField === label ? `${label} copied` : `Copy ${label}`}
+                              aria-label={copiedBankField === label ? `${label} copied` : `Copy ${label}`}
+                              onClick={async () => {
+                                if (await copyText(value)) {
+                                  setCopiedBankField(label);
+                                  setTimeout(() => setCopiedBankField(null), 2000);
+                                }
+                              }}
+                            >
+                              {copiedBankField === label ? (
+                                <Check className="h-4 w-4 text-emerald-600" />
+                              ) : (
+                                <Copy className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </dl>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      Transfer the exact order total, then place your order and
+                      share the receipt screenshot with us so we can dispatch
+                      quickly.
+                    </p>
+                  </div>
+                )}
+
                 <p className="flex items-start gap-2 rounded-xl border border-brand-gold/25 bg-brand-gold/5 px-4 py-3 text-xs text-muted-foreground">
                   <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-gold" />
                   Our team confirms every order before it ships — you will
@@ -491,6 +563,20 @@ export default function CheckoutPage() {
             </motion.div>
 
             {/* Desktop CTA — mobile uses the sticky bar below */}
+            {submitError && (
+              <div
+                role="alert"
+                className="mb-4 flex items-start gap-2.5 rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm"
+              >
+                <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                <div>
+                  <p className="font-semibold text-destructive">
+                    There was a problem placing your order
+                  </p>
+                  <p className="mt-0.5 text-muted-foreground">{submitError}</p>
+                </div>
+              </div>
+            )}
             <Button
               type="submit"
               disabled={isSubmitting}
@@ -531,6 +617,12 @@ export default function CheckoutPage() {
       {/* Mobile sticky action bar — total + Place Order in thumb reach */}
       {!showSuccess && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-brand-gold/25 bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-lg lg:hidden">
+          {submitError && (
+            <p role="alert" className="mb-2 flex items-center gap-1.5 text-xs font-medium text-destructive">
+              <CircleAlert className="h-3.5 w-3.5 shrink-0" />
+              {submitError}
+            </p>
+          )}
           <div className="flex items-center gap-3">
             <div className="min-w-0 shrink-0">
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">

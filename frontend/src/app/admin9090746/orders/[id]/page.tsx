@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { PAYMENT_LABELS } from "@/lib/payment";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -93,7 +94,7 @@ export default function AdminOrderDetailPage() {
         <Package className="h-16 w-16 text-muted-foreground" />
         <h1 className="text-2xl font-bold">Order not found</h1>
         <Button asChild variant="outline">
-          <Link href="/admin/orders">
+          <Link href="/admin9090746/orders">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Orders
           </Link>
@@ -384,7 +385,7 @@ export default function AdminOrderDetailPage() {
             <div className="text-sm space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Method</span>
-                <span className="capitalize font-medium">{order.paymentMethod}</span>
+                <span className="capitalize font-medium">{PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status</span>

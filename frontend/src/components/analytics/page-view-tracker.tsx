@@ -13,7 +13,7 @@ export default function PageViewTracker() {
   const lastTracked = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!pathname || pathname.startsWith("/admin")) return;
+    if (!pathname || pathname.startsWith("/admin9090746")) return;
     if (lastTracked.current === pathname) return;
 
     lastTracked.current = pathname;

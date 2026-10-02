@@ -8,11 +8,11 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
+import { useUIStore } from "@/stores/ui-store";
 import { getImageUrl } from "@/lib/utils";
 import { normalizeSizeLabel } from "@/lib/shoe-sizes";
 import { richTextToPlainText } from "@/lib/rich-text";
 import { Product } from "@/types";
-import { toast } from "sonner";
 
 interface ChooseOptionsDrawerProps {
   product: Product | null;
@@ -27,8 +27,11 @@ export default function ChooseOptionsDrawer({
 }: ChooseOptionsDrawerProps) {
   const router = useRouter();
   const addItem = useCartStore((s) => s.addItem);
+  const setCartOpen = useUIStore((s) => s.setCartOpen);
   const [size, setSize] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
+  // Inline validation message above the action buttons (no popup).
+  const [formError, setFormError] = useState<string | null>(null);
 
   const sizes: string[] = useMemo(() => {
     // The plain `sizes` array is often empty — every size really lives on the
@@ -54,6 +57,7 @@ export default function ChooseOptionsDrawer({
       const firstInStock = sizes.find((s) => stockForSize(s) > 0);
       setSize(firstInStock ?? sizes[0] ?? "");
       setQuantity(1);
+      setFormError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, product?._id]);
@@ -83,13 +87,14 @@ export default function ChooseOptionsDrawer({
   const handleAddToCart = () => {
     if (!product) return false;
     if (sizes.length && !size) {
-      toast.error("Please select a size");
+      setFormError("Please select a size");
       return false;
     }
     if (sizes.length && stockForSize(size) <= 0) {
-      toast.error("Selected size is out of stock");
+      setFormError("Selected size is out of stock");
       return false;
     }
+    setFormError(null);
 
     const variant = (product.variants || []).find((v: any) => v.size === size);
 
@@ -112,14 +117,14 @@ export default function ChooseOptionsDrawer({
 
   const onAddToCart = () => {
     if (handleAddToCart()) {
-      toast.success("Added to cart", { description: product?.name });
       onOpenChange(false);
+      // Amazon-style: the cart drawer itself is the confirmation.
+      setCartOpen(true);
     }
   };
 
   const onBuyNow = () => {
     if (handleAddToCart()) {
-      toast.success("Added to cart", { description: product?.name });
       onOpenChange(false);
       // Login-free checkout — guests can order directly
       router.push("/checkout");
@@ -228,7 +233,12 @@ export default function ChooseOptionsDrawer({
                         <button
                           key={s}
                           type="button"
-                          onClick={() => inStock && setSize(s)}
+                          onClick={() => {
+                            if (inStock) {
+                              setSize(s);
+                              setFormError(null);
+                            }
+                          }}
                           disabled={!inStock}
                           aria-pressed={size === s}
                           className={`flex h-12 w-full items-center justify-between border px-3 text-sm font-semibold transition-all ${
@@ -257,6 +267,11 @@ export default function ChooseOptionsDrawer({
 
             {/* Footer — quantity + add to cart */}
             <div className="border-t px-6 py-5 space-y-3 shrink-0">
+              {formError && (
+                <p role="alert" className="text-sm font-medium text-destructive">
+                  {formError}
+                </p>
+              )}
               <div className="flex items-center gap-4">
                 <div className="flex items-center border h-12">
                   <button

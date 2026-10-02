@@ -5,7 +5,7 @@ import { Coupon } from '../models/coupon.model';
 import { Notification } from '../models/notification.model';
 import { NotFoundError, BadRequestError } from '../utils/AppError';
 import { logger } from '../utils/logger';
-import { sendOrderWhatsApp } from './whatsapp.service';
+import { sendOrderEmails } from './order-email.service';
 import { parsePagination, parseSort, buildPaginationResponse } from '../utils/pagination';
 import { generateOrderNumber, getPhoneVariants, normalizePhone, maskPhone } from '../utils/helpers';
 import { NOT_DELETED } from '../utils/softDelete';
@@ -209,9 +209,9 @@ export class OrderService {
       data: { orderId: order._id, orderNumber: order.orderNumber },
     });
 
-    // Fire-and-forget owner WhatsApp alert — must never fail/delay the order.
-    void sendOrderWhatsApp(order).catch((err: Error) => {
-      logger.error(`WhatsApp alert error for order #${order.orderNumber}: ${err.message}`);
+    // Fire-and-forget owner/customer emails — must never fail/delay the order.
+    void sendOrderEmails(order).catch((err: Error) => {
+      logger.error(`Order email error for order #${order.orderNumber}: ${err.message}`);
     });
 
     return order;
@@ -357,9 +357,9 @@ export class OrderService {
       }
     }
 
-    // Fire-and-forget owner WhatsApp alert — must never fail/delay the order.
-    void sendOrderWhatsApp(order).catch((err: Error) => {
-      logger.error(`WhatsApp alert error for order #${order.orderNumber}: ${err.message}`);
+    // Fire-and-forget owner/customer emails — must never fail/delay the order.
+    void sendOrderEmails(order).catch((err: Error) => {
+      logger.error(`Order email error for order #${order.orderNumber}: ${err.message}`);
     });
 
     return order;

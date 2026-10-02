@@ -50,7 +50,7 @@ export default function AdminProductDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       toast.success("Product deleted");
-      router.push("/admin/products");
+      router.push("/admin9090746/products");
     },
     onError: () => toast.error("Failed to delete product"),
   });
@@ -79,7 +79,7 @@ export default function AdminProductDetailPage() {
         <Package className="h-16 w-16 text-muted-foreground" />
         <h1 className="text-2xl font-bold">Product not found</h1>
         <Button asChild variant="outline">
-          <Link href="/admin/products">
+          <Link href="/admin9090746/products">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Products
           </Link>
@@ -129,7 +129,7 @@ export default function AdminProductDetailPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/admin/products/${product._id}/edit`}>
+            <Link href={`/admin9090746/products/${product._id}/edit`}>
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Link>
@@ -387,7 +387,7 @@ export default function AdminProductDetailPage() {
                 product.categories.map((cat: any) => (
                   <Link
                     key={cat._id}
-                    href={`/admin/categories/${cat._id}`}
+                    href={`/admin9090746/categories/${cat._id}`}
                     className="inline-flex items-center gap-2 text-sm font-medium hover:underline block"
                   >
                     <Tag className="h-4 w-4" />

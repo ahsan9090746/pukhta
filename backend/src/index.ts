@@ -20,7 +20,7 @@ import { initializeSocket } from './socket';
 import { seedSizes } from './seeds/size-seed';
 import { seedAdmin } from './seeds/admin-seed';
 import { seedSettings } from './seeds/settings-seed';
-import { logWhatsAppStatus } from './services/whatsapp.service';
+import { logEmailStatus } from './utils/sendEmail';
 import fs from 'fs';
 import path from 'path';
 
@@ -117,7 +117,7 @@ server.listen(config.port, '0.0.0.0', () => {
       logger.info(`API available at http://localhost:${config.port}/api`);
       logger.info(`Health check at http://localhost:${config.port}/api/health`);
       logger.info(`Network access: http://192.168.100.6:${config.port}/api`);
-      logWhatsAppStatus();
+      logEmailStatus();
     });
   } catch (error) {
     logger.error(`Failed to start server: ${error}`);

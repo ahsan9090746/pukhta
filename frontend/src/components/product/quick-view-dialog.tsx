@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useCartStore } from "@/stores/cart-store";
+import { useUIStore } from "@/stores/ui-store";
 import { getImageUrl } from "@/lib/utils";
 import { Product } from "@/types";
-import { toast } from "sonner";
 
 interface QuickViewDialogProps {
   product: Product | null;
@@ -22,11 +22,14 @@ interface QuickViewDialogProps {
 
 export default function QuickViewDialog({ product, open, onOpenChange }: QuickViewDialogProps) {
   const addItem = useCartStore((s) => s.addItem);
+  const setCartOpen = useUIStore((s) => s.setCartOpen);
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [qty, setQty] = useState(1);
+  // Inline validation message above the action row (no popup).
+  const [formError, setFormError] = useState<string | null>(null);
 
   if (!product) return null;
 
@@ -51,19 +54,21 @@ export default function QuickViewDialog({ product, open, onOpenChange }: QuickVi
       setSelectedSize("");
       setSelectedColor("");
       setQty(1);
+      setFormError(null);
     }
     onOpenChange(o);
   };
 
   const handleAddToCart = (goToCart: boolean = false) => {
     if (sizes.length > 0 && !selectedSize) {
-      toast.error("Please select a size");
+      setFormError("Please select a size");
       return;
     }
     if (colors.length > 0 && !selectedColor) {
-      toast.error("Please select a color");
+      setFormError("Please select a color");
       return;
     }
+    setFormError(null);
     const variant = (product.variants || []).find(
       (v: any) => (v.size || "") === selectedSize
     );
@@ -76,11 +81,13 @@ export default function QuickViewDialog({ product, open, onOpenChange }: QuickVi
       quantity: qty,
       price: product.price,
     });
-    toast.success(goToCart ? "Added — taking you to cart" : "Added to cart", { description: product.name });
     if (goToCart) {
+      resetAndClose(false);
       router.push("/cart");
     } else {
+      // The cart drawer itself is the confirmation (Amazon-style, no popup).
       resetAndClose(false);
+      setCartOpen(true);
     }
   };
 
@@ -165,7 +172,10 @@ export default function QuickViewDialog({ product, open, onOpenChange }: QuickVi
                   {sizes.map((s) => (
                     <button
                       key={s}
-                      onClick={() => setSelectedSize(s)}
+                      onClick={() => {
+                        setSelectedSize(s);
+                        setFormError(null);
+                      }}
                       className={`min-w-[44px] h-9 px-2 rounded-md border text-sm font-medium transition-all ${
                         selectedSize === s
                           ? "bg-foreground text-background border-foreground"
@@ -186,7 +196,10 @@ export default function QuickViewDialog({ product, open, onOpenChange }: QuickVi
                   {colors.map((c) => (
                     <button
                       key={c}
-                      onClick={() => setSelectedColor(c)}
+                      onClick={() => {
+                        setSelectedColor(c);
+                        setFormError(null);
+                      }}
                       className={`h-9 px-3 rounded-md border text-sm capitalize transition-all ${
                         selectedColor === c
                           ? "bg-foreground text-background border-foreground"
@@ -201,6 +214,11 @@ export default function QuickViewDialog({ product, open, onOpenChange }: QuickVi
             )}
 
             {/* Qty + Add to cart */}
+            {formError && (
+              <p role="alert" className="text-sm font-medium text-destructive">
+                {formError}
+              </p>
+            )}
             <div className="flex items-center gap-3 pt-2">
               <div className="flex items-center border rounded-md">
                 <button
