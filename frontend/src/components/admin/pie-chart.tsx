@@ -2,7 +2,7 @@
 
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from "recharts";
 
-// Gold-family palette matching the admin panel's brand colors
+// Gold-family palette matching the admin panel's brand color
 const PALETTE = [
   "#BFA46F",
   "#8B7340",
