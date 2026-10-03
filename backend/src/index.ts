@@ -85,7 +85,8 @@ app.use(errorHandler);
 // Start server
 const startServer = async () => {
   // Render dynamic port use karta hai, isliye process.env.PORT zaroori hai
-  const PORT = process.env.PORT || config.port || 5001;
+    // Render dynamic port use karta hai, isliye process.env.PORT zaroori hai
+  const PORT = Number(process.env.PORT || config.port || 5001);
 
   // 1. Pehle server ko listen karwao taake Render ko port mil jaye
   server.listen(PORT, '0.0.0.0', () => {
