@@ -1,6 +1,10 @@
 import { Metadata } from "next";
 import { ReactNode } from "react";
 
+// Always render on demand — never prerender at build time, so a sleeping
+// backend can't crash `next build` ("Collecting page data").
+export const dynamic = "force-dynamic";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 const SITE_NAME = "StepUp Premium Footwear";
 
@@ -17,7 +21,12 @@ interface CategorySlugLayoutProps {
 export async function generateMetadata({ params }: CategorySlugLayoutProps): Promise<Metadata> {
   const { slug } = await params;
   try {
-    const res = await fetch(`${API_URL}/categories/${slug}`, { cache: "no-store" });
+    const res = await fetch(`${API_URL}/categories/${slug}`, {
+      cache: "no-store",
+      // Fail fast if the backend is asleep instead of hanging the request.
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return {};
     const json = await res.json();
     const category = json?.data?.category;
     if (!category) return {};

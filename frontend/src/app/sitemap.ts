@@ -30,7 +30,12 @@ async function fetchAll(
     try {
       const res = await fetch(
         `${API_URL}/${endpoint}?isActive=true&limit=${PAGE_SIZE}&page=${page}`,
-        { next: { revalidate } }
+        {
+          next: { revalidate },
+          // Fail fast if the backend is asleep (e.g. Render free-tier cold
+          // start) instead of hanging "Collecting page data" at build time.
+          signal: AbortSignal.timeout(10000),
+        }
       );
       if (!res.ok) break;
       json = await res.json();

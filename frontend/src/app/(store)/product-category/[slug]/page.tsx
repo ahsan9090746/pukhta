@@ -2,6 +2,10 @@ import { Suspense } from "react";
 import ProductCategoryContent from "@/components/product-category-content";
 import type { Category } from "@/types";
 
+// Always render on demand — never prerender at build time, so a sleeping
+// backend can't crash `next build` ("Collecting page data").
+export const dynamic = "force-dynamic";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
 /**
@@ -14,6 +18,8 @@ async function fetchCategory(slug: string): Promise<Category | null> {
   try {
     const res = await fetch(`${API_URL}/categories/${encodeURIComponent(slug)}`, {
       cache: "no-store",
+      // Fail fast if the backend is asleep instead of hanging the request.
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     const json = await res.json();
