@@ -30,7 +30,7 @@ if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
 }
 
-// Ensure uploads directory exists (for category/product/banner images)
+// Ensure uploads directory exists
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -39,7 +39,6 @@ if (!fs.existsSync(uploadsDir)) {
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.IO
 const io = initializeSocket(server);
 
 // Security middleware
@@ -57,27 +56,17 @@ app.use(cors({
     'Content-Type',
     'Authorization',
     'X-Refresh-Token',
-    // Client analytics tracker (frontend/src/lib/analytics.ts) identifies
-    // visitors through these custom headers — they must pass the CORS preflight.
     'X-Visitor-Id',
     'X-Session-Id',
   ],
 }));
 
-// Compression
 app.use(compression());
-
-// Cookie parser
 app.use(cookieParser());
-
-// Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Analytics: passive visit tracking for any non-API traffic (skips /api, /uploads, bots)
 app.use(trackVisit);
 
-// Logging
 if (config.nodeEnv !== 'test') {
   app.use(morgan('combined', {
     stream: {
@@ -86,60 +75,48 @@ if (config.nodeEnv !== 'test') {
   }));
 }
 
-// Rate limiting
 app.use('/api/', generalLimiter);
-
-// Static files: uploaded images served at /uploads/<filename>
 app.use('/uploads', express.static(uploadsDir, { maxAge: '1d' }));
-
-// API routes
 app.use('/api', routes);
-
-// Socket.IO instance accessible via app
 app.set('io', io);
-
-// 404 handler
 app.use(notFound);
-
-// Global error handler
 app.use(errorHandler);
 
 // Start server
 const startServer = async () => {
+  // Render dynamic port use karta hai, isliye process.env.PORT zaroori hai
+  const PORT = process.env.PORT || config.port || 5001;
+
+  // 1. Pehle server ko listen karwao taake Render ko port mil jaye
+  server.listen(PORT, '0.0.0.0', () => {
+    logger.info(`Server running in ${config.nodeEnv} mode on port ${PORT}`);
+    logger.info(`API available at http://localhost:${PORT}/api`);
+    logger.info(`Health check at http://localhost:${PORT}/api/health`);
+    logEmailStatus();
+  });
+
+  // 2. Ab database connect karo (agar yeh slow bhi ho, port already open hai)
   try {
     await connectDB();
     await seedSizes();
     await seedAdmin();
     await seedSettings();
-
-server.listen(config.port, '0.0.0.0', () => {
-      logger.info(`Server running in ${config.nodeEnv} mode on port ${config.port}`);
-      logger.info(`API available at http://localhost:${config.port}/api`);
-      logger.info(`Health check at http://localhost:${config.port}/api/health`);
-      logger.info(`Network access: http://192.168.100.6:${config.port}/api`);
-      logEmailStatus();
-    });
   } catch (error) {
-    logger.error(`Failed to start server: ${error}`);
-    process.exit(1);
+    logger.error(`Database connection or seeding failed: ${error}`);
+    // process.exit(1) hata diya hai taake Render logs dikha sake
   }
 };
 
-// Handle unhandled rejections
 process.on('unhandledRejection', (err: Error) => {
   logger.error(`Unhandled Rejection: ${err.message}`);
   logger.error(err.stack || '');
-  server.close(() => process.exit(1));
 });
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (err: Error) => {
   logger.error(`Uncaught Exception: ${err.message}`);
   logger.error(err.stack || '');
-  process.exit(1);
 });
 
-// Graceful shutdown
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received');
   server.close(() => {
@@ -148,13 +125,8 @@ process.on('SIGTERM', () => {
   });
 });
 
-// In test mode (Jest sets NODE_ENV=test) the tests own the MongoDB connection
-// and HTTP server lifecycle — they connect to a dedicated test DB in beforeAll
-// and close the server in afterAll. Starting the real connection + seeds here
-// would race with that (and point at the wrong database).
 if (config.nodeEnv !== 'test') {
   startServer();
 }
 
 export { app, server, io };
-
