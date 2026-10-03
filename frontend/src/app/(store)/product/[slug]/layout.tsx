@@ -1,6 +1,10 @@
 import { Metadata } from "next";
 import { ReactNode } from "react";
 
+// Always render on demand — never prerender at build time, so a sleeping
+// backend can't crash `next build` ("Collecting page data").
+export const dynamic = "force-dynamic";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
 /** Strips HTML tags from rich-text descriptions for use as meta text. */
@@ -23,7 +27,12 @@ interface ProductSlugLayoutProps {
 export async function generateMetadata({ params }: ProductSlugLayoutProps): Promise<Metadata> {
   const { slug } = await params;
   try {
-    const res = await fetch(`${API_URL}/products/${slug}`, { cache: "no-store" });
+    const res = await fetch(`${API_URL}/products/${slug}`, {
+      cache: "no-store",
+      // Fail fast if the backend is asleep instead of hanging the request.
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return {};
     const json = await res.json();
     const product = json?.data?.product;
     if (!product) return {};
