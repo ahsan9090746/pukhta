@@ -1,3 +1,6 @@
+// Render on demand - skip static generation so a sleeping backend cannot crash the build.
+export const dynamic = "force-dynamic";
+
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import FaqsContent from "./faqs-content";

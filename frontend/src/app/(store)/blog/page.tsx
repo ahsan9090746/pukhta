@@ -1,3 +1,6 @@
+// Render on demand - skip static generation so a sleeping backend cannot crash the build.
+export const dynamic = "force-dynamic";
+
 import type { Metadata } from "next";
 import BlogContent from "./blog-content";
 import { POSTS } from "./blog-posts";

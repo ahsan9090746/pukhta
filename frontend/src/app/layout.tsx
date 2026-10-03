@@ -1,3 +1,6 @@
+// Render on demand - skip static generation so a sleeping backend cannot crash the build.
+export const dynamic = "force-dynamic";
+
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
