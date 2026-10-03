@@ -48,6 +48,13 @@ export function generateSlug(str: string) {
 export function getImageUrl(path: string) {
   if (!path) return "/placeholder.png";
   if (path.startsWith("http")) return path;
-  if (path.startsWith("/uploads/")) return path;
-  return `${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")}${path}`;
+  // Backend origin derived from NEXT_PUBLIC_API_URL (inlined at build time).
+  // /uploads/* files live on the backend, so they need the absolute URL in
+  // production (e.g. https://pukhta-backend.onrender.com/uploads/...).
+  const backendBase = (
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api"
+  ).replace(/\/api\/?$/, "");
+  if (path.startsWith("/uploads/")) return `${backendBase}${path}`;
+  if (path.startsWith("/")) return `${backendBase}${path}`;
+  return `${backendBase}/${path}`;
 }

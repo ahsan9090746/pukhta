@@ -1,4 +1,12 @@
 /** @type {import('next').NextConfig} */
+// Backend origin derived from NEXT_PUBLIC_API_URL (e.g.
+// "https://pukhta-backend.onrender.com/api" -> "https://pukhta-backend.onrender.com").
+// NEXT_PUBLIC_* vars are inlined at build time, so this picks up the Render
+// production value during `next build` and falls back to localhost for dev.
+const backendBase = (
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'
+).replace(/\/api\/?$/, '');
+
 const nextConfig = {
   outputFileTracingRoot: __dirname,
   allowedDevOrigins: ['192.168.100.6'],
@@ -15,6 +23,10 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'pukhta-backend.onrender.com',
       },
       {
         protocol: 'http',
@@ -43,7 +55,7 @@ const nextConfig = {
     return [
       {
         source: '/uploads/:path*',
-        destination: 'http://localhost:5001/uploads/:path*',
+        destination: `${backendBase}/uploads/:path*`,
       },
     ];
   },
