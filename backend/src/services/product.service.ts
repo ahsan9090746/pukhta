@@ -125,6 +125,10 @@ export class ProductService {
 
     const [products, total] = await Promise.all([
       Product.find(filter)
+        // List responses skip heavy fields the listing UI never renders
+        // (descriptions, SEO meta, cost price) — single-product reads still
+        // return the full document.
+        .select('-description -metaTitle -metaDescription -costPrice -__v')
         .populate('categories', 'name slug')
         .sort(sort)
         .skip(skip)
@@ -285,6 +289,10 @@ export class ProductService {
 
     const [products, total] = await Promise.all([
       Product.find(filter)
+        // List responses skip heavy fields the listing UI never renders
+        // (descriptions, SEO meta, cost price) — single-product reads still
+        // return the full document.
+        .select('-description -metaTitle -metaDescription -costPrice -__v')
         .populate('categories', 'name slug')
         .sort(sort)
         .skip(skip)

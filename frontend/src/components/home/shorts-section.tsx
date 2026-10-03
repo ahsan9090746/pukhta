@@ -84,12 +84,68 @@ interface ShortItem {
 /** Minimum shorts required for the homepage section to appear */
 export const REQUIRED_SHORTS = 5;
 
+/** Section heading — rendered even before videos load so nothing shifts. */
+function ShortsHeader() {
+  return (
+    <div className="container">
+      {/* Header */}
+      <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        className="text-center mb-10"
+      >
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <span className="h-px w-8 bg-gradient-to-r from-transparent to-brand-gold/60" />
+          <span className="text-[11px] uppercase tracking-[0.3em] font-semibold text-brand-gold">
+            Shorts
+          </span>
+          <span className="h-px w-8 bg-gradient-to-l from-transparent to-brand-gold/60" />
+        </div>
+
+        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-brand-gold">
+          Watch Our Story
+        </h2>
+
+        <div className="mt-4 h-0.5 w-12 bg-brand-gold/40 rounded-full mx-auto" />
+      </motion.div>
+    </div>
+  );
+}
+
 export default function ShortsSection() {
   const router = useRouter();
+
+  // Below-fold section: don't fetch videos (or their metadata) until the
+  // visitor is nearly there. Same skeletons as the loading state, so there
+  // is no layout shift and nothing visual changes.
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const [nearView, setNearView] = useState(false);
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setNearView(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setNearView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "800px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const { data: shorts, isLoading } = useQuery({
     queryKey: ["shorts"],
     queryFn: () => api.get("/shorts").then((res) => res.data.data.shorts ?? []),
+    enabled: nearView,
   });
 
   const getTargetUrl = (short: ShortItem) => {
@@ -134,6 +190,26 @@ export default function ShortsSection() {
     }
   };
 
+  // Before the visitor nears this section, hold its exact space with
+  // header + skeletons (same sizes as the real cards) — zero layout shift.
+  if (!nearView) {
+    return (
+      <section ref={sectionRef} className="bg-background py-14 overflow-hidden">
+        <ShortsHeader />
+        <div className="container">
+          <div className="flex gap-3 sm:gap-4 overflow-hidden">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton
+                key={i}
+                className="aspect-[9/16] w-[44vw] sm:w-[200px] lg:w-[210px] shrink-0 rounded-2xl"
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   // Show skeletons while loading, hide only when fewer than minimum
   if (!isLoading && (!shorts || shorts.length < REQUIRED_SHORTS)) return null;
 
@@ -141,31 +217,8 @@ export default function ShortsSection() {
   const loopShorts: ShortItem[] = shorts ? [...shorts, ...shorts] : [];
 
   return (
-    <section className="bg-background py-14 overflow-hidden">
-      <div className="container">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="text-center mb-10"
-        >
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <span className="h-px w-8 bg-gradient-to-r from-transparent to-brand-gold/60" />
-            <span className="text-[11px] uppercase tracking-[0.3em] font-semibold text-brand-gold">
-              Shorts
-            </span>
-            <span className="h-px w-8 bg-gradient-to-l from-transparent to-brand-gold/60" />
-          </div>
-
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-brand-gold">
-            Watch Our Story
-          </h2>
-
-          <div className="mt-4 h-0.5 w-12 bg-brand-gold/40 rounded-full mx-auto" />
-        </motion.div>
-      </div>
+    <section ref={sectionRef} className="bg-background py-14 overflow-hidden">
+      <ShortsHeader />
 
       {/* Marquee — same animation style as customer reviews */}
       {isLoading ? (

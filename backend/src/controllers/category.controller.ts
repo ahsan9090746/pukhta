@@ -9,7 +9,7 @@ import { deleteUploadedFile, renameUploadedEntityFiles } from '../utils/upload';
 import { sanitizeRichText } from '../utils/sanitize';
 import { generateSlug } from '../utils/slugify';
 import { NOT_DELETED, softDeleteFields } from '../utils/softDelete';
-import { getCategoryAndDescendantIds } from '../utils/categoryTree';
+
 
 const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
 
@@ -21,23 +21,33 @@ const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
  * `activeProductCount` only the ones the storefront actually lists.
  */
 const withProductCounts = async <T extends { _id: unknown }>(categories: T[]) => {
-  // Build a map of category -> its descendants (including self)
-  const categoryDescendantsMap = new Map<string, string[]>();
-  
-  for (const cat of categories) {
-    const id = String(cat._id);
-    const withDescendants = await getCategoryAndDescendantIds(id);
-    categoryDescendantsMap.set(id, withDescendants);
+  // Build a map of category -> its descendants (including self) with exactly
+  // TWO queries no matter how many categories are listed (the old loop fired
+  // one query per category, which made /categories take seconds on Atlas).
+  // A category is a descendant of X when its `ancestors` chain contains X —
+  // the same rule the per-category helper used, just evaluated in memory.
+  const ids = categories.map((cat) => String(cat._id));
+  const [allCats, products] = await Promise.all([
+    Category.find({ ...NOT_DELETED }, { _id: 1, ancestors: 1 }).lean(),
+    // Read every product's category assignments once. Counting in JS keeps the
+    // numbers EXACT — a product that belongs to several categories is still one
+    // product, while adding up per-category counts across the tree would count it
+    // once per category (parents would over-report).
+    Product.find({ ...NOT_DELETED }, { categories: 1, isActive: 1 }).lean(),
+  ]);
+
+  const categoryDescendantsMap = new Map<string, Set<string>>(
+    ids.map((id) => [id, new Set([id])])
+  );
+  for (const cat of allCats as Array<{ _id: unknown; ancestors?: unknown }>) {
+    const childId = String(cat._id);
+    const ancestors = Array.isArray(cat.ancestors) ? cat.ancestors : [];
+    for (const ancestor of ancestors) {
+      const key = String(ancestor);
+      const scope = categoryDescendantsMap.get(key);
+      if (scope) scope.add(childId);
+    }
   }
-  
-  // Read every product's category assignments once. Counting in JS keeps the
-  // numbers EXACT — a product that belongs to several categories is still one
-  // product, while adding up per-category counts across the tree would count it
-  // once per category (parents would over-report).
-  const products = await Product.find(
-    { ...NOT_DELETED },
-    { categories: 1, isActive: 1 }
-  ).lean();
 
   const assignments = products.map((product: any) => ({
     categoryIds: (product.categories || []).map((id: any) => String(id)),

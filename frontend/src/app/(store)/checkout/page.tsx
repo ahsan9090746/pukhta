@@ -2,13 +2,16 @@
 // Render on demand - skip static generation so a sleeping backend cannot crash the build.
 export const dynamic = "force-dynamic";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+// NOTE: only the tiny country list ships with the page — states + cities
+// (~2MB) lazy-load when the visitor reaches those fields (see below).
+import countryList from "country-state-city/lib/cjs/assets/country.json";
 import {
   Banknote,
   Check,
@@ -19,9 +22,17 @@ import {
   Loader2,
   Lock,
   MapPin,
+  MessageCircle,
   ShoppingBag,
   Sparkles,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import api from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
 import {
@@ -35,8 +46,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
-import OrderSuccessAnimation from "@/components/checkout/order-success-animation";
+import { default as nextDynamic } from "next/dynamic";
 import OrderSummary from "@/components/checkout/order-summary";
+// Celebration overlay only matters after an order is placed — loads on
+// demand so it never costs initial-load time. Same visuals, same timing.
+const OrderSuccessAnimation = nextDynamic(
+  () => import("@/components/checkout/order-success-animation"),
+  { ssr: false }
+);
 import TrustBadges from "@/components/common/trust-badges";
 import Breadcrumb from "@/components/common/breadcrumb";
 import EmptyState from "@/components/common/empty-state";
@@ -45,7 +62,7 @@ import { useStoreSettings } from "@/hooks/useStoreSettings";
 
 const addressSchema = z.object({
   fullName: z.string().min(2, "Name is required"),
-  email: z.string().email("Valid email required").optional().or(z.literal("")),
+  email: z.string().min(1, "Email is required").email("Valid email required"),
   phone: z.string().min(10, "Valid phone number required"),
   address: z.string().min(5, "Address is required"),
   city: z.string().min(2, "City is required"),
@@ -81,7 +98,7 @@ const FIELD_CLASS = "h-12 text-base md:h-11 md:text-sm";
 
 export default function CheckoutPage() {
   const { items, clearCart } = useCartStore();
-  const { format } = useStoreSettings();
+  const { format, settings, storePhone } = useStoreSettings();
   const router = useRouter();
 
   const [paymentMethod, setPaymentMethod] = useState<string>("cod");
@@ -125,17 +142,131 @@ export default function CheckoutPage() {
     register,
     handleSubmit,
     reset,
+    control,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<AddressFormData>({
     resolver: zodResolver(addressSchema),
-    defaultValues: { country: "Pakistan" },
+    defaultValues: { country: "Pakistan", state: "", city: "" },
   });
 
-  // Prefill the form with the address used last time on this device
+  // Country / State / City dropdowns (country-state-city package).
+  // Stored as names ("Pakistan") so the backend payload stays unchanged.
+  // The country list (93KB) ships with the page so the dropdown is complete
+  // instantly. States + cities (the ~2MB part) load only when the visitor
+  // reaches these fields — zero cost to initial load, same dropdowns after.
+  type LocationLib = typeof import("country-state-city");
+  const [locationLib, setLocationLib] = useState<LocationLib | null>(null);
+  const locationLoading = useRef(false);
+  const ensureLocations = useCallback(() => {
+    if (locationLoading.current) return;
+    locationLoading.current = true;
+    import("country-state-city").then(
+      (lib) => setLocationLib(lib),
+      () => {
+        locationLoading.current = false;
+      }
+    );
+  }, []);
+  const countries = useMemo(
+    () =>
+      (countryList as Array<{
+        isoCode: string;
+        name: string;
+        flag?: string;
+      }>),
+    []
+  );
+  const watchedCountry = watch("country");
+  const watchedState = watch("state");
+  const selectedCountry = useMemo(
+    () =>
+      countries.find((c) => c.name === watchedCountry) ||
+      countries.find((c) => c.isoCode === "PK"),
+    [countries, watchedCountry]
+  );
+  const statesOfCountry = useMemo(
+    () =>
+      locationLib && selectedCountry
+        ? locationLib.State.getStatesOfCountry(selectedCountry.isoCode)
+        : [],
+    [locationLib, selectedCountry]
+  );
+  const selectedState = useMemo(
+    () => statesOfCountry.find((s) => s.name === watchedState),
+    [statesOfCountry, watchedState]
+  );
+  const citiesOfState = useMemo(() => {
+    if (!locationLib || !selectedCountry) return [];
+    const raw = selectedState
+      ? locationLib.City.getCitiesOfState(
+          selectedCountry.isoCode,
+          selectedState.isoCode
+        )
+      : locationLib.City.getCitiesOfCountry(selectedCountry.isoCode) || [];
+    // The dataset contains duplicate names (e.g. "Shorkot" twice in Punjab) —
+    // dedupe by name so React keys and Select values stay unique.
+    const seen = new Set<string>();
+    return raw.filter((c) => {
+      if (seen.has(c.name)) return false;
+      seen.add(c.name);
+      return true;
+    });
+  }, [locationLib, selectedCountry, selectedState]);
+
+  const handleCountryChange = useCallback(
+    (name: string) => {
+      setValue("country", name, { shouldValidate: true });
+      setValue("state", "", { shouldValidate: false });
+      setValue("city", "", { shouldValidate: false });
+    },
+    [setValue]
+  );
+
+  const handleStateChange = useCallback(
+    (name: string) => {
+      setValue("state", name, { shouldValidate: true });
+      setValue("city", "", { shouldValidate: false });
+    },
+    [setValue]
+  );
+
+  // Shop WhatsApp number for the payment-screenshot instruction.
+  // Prefers Admin → Settings → Social Media → WhatsApp link, falls back to store phone.
+  const adminWhatsapp = (settings?.socialMedia?.whatsapp || "").trim();
+  const phoneDigits = (storePhone || "").replace(/\D/g, "");
+  const adminWhatsappDigits = adminWhatsapp.replace(/\D/g, "");
+  // wa.me needs the full international digits (92…); local 03… numbers get the 0 swapped for 92.
+  const normalizePk = (digits: string) => {
+    if (!digits) return "";
+    if (digits.startsWith("92")) return digits;
+    if (digits.startsWith("0")) return `92${digits.slice(1)}`;
+    return digits;
+  };
+  const waDigits =
+    normalizePk(adminWhatsappDigits) || normalizePk(phoneDigits);
+  const displayShopNumber =
+    storePhone ||
+    (adminWhatsappDigits ? `+${adminWhatsappDigits}` : "") ||
+    "our shop number";
+  const waText = encodeURIComponent(
+    `Assalam-o-Alaikum! I just placed an order (${format(total)}) via bank deposit. Here is my payment receipt screenshot.`
+  );
+  const whatsappHref = waDigits
+    ? `https://wa.me/${waDigits}?text=${waText}`
+    : "";
+  const [copiedShopNumber, setCopiedShopNumber] = useState(false);
+
+  // Prefill the form with the address used last time on this device.
+  // Country always falls back to Pakistan when the stored value is missing.
   useEffect(() => {
     try {
       const stored = localStorage.getItem(ADDRESS_KEY);
-      if (stored) reset(JSON.parse(stored) as AddressFormData);
+      if (stored) {
+        const parsed = JSON.parse(stored) as Partial<AddressFormData>;
+        reset({ country: "Pakistan", state: "", city: "", ...parsed } as AddressFormData);
+      }
     } catch {
       // malformed storage — just start with an empty form
     }
@@ -161,7 +292,7 @@ export default function CheckoutPage() {
           country: data.country,
         },
         paymentMethod,
-        guestEmail: data.email || undefined,
+        guestEmail: data.email,
       });
 
       const order = response.data.data.order;
@@ -175,7 +306,7 @@ export default function CheckoutPage() {
           total: order.total,
           itemCount,
           paymentMethod,
-          email: data.email || "",
+          email: data.email,
           items: orderLines.map((line) => ({
             name: line.name,
             quantity: line.quantity,
@@ -338,12 +469,7 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">
-                    Email{" "}
-                    <span className="font-normal text-muted-foreground">
-                      (optional — for order updates)
-                    </span>
-                  </Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
@@ -375,32 +501,159 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
+                <div
+                  className="grid grid-cols-2 gap-5 md:grid-cols-4"
+                  onPointerEnter={ensureLocations}
+                  onFocus={ensureLocations}
+                >
                   <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      className={FIELD_CLASS}
-                      autoComplete="address-level2"
-                      {...register("city")}
+                    <Label htmlFor="country">Country</Label>
+                    <Controller
+                      control={control}
+                      name="country"
+                      render={({ field }) => (
+                        <Select
+                          value={field.value || "Pakistan"}
+                          onValueChange={handleCountryChange}
+                        >
+                          <SelectTrigger
+                            id="country"
+                            className={FIELD_CLASS}
+                          >
+                            <SelectValue placeholder="Select country" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {countries.map((c) => (
+                              <SelectItem key={c.isoCode} value={c.name}>
+                                {c.flag} {c.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                     />
-                    {errors.city && (
+                    {errors.country && (
                       <p className="text-xs text-destructive">
-                        {errors.city.message}
+                        {errors.country.message}
                       </p>
                     )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="state">State</Label>
-                    <Input
-                      id="state"
-                      className={FIELD_CLASS}
-                      autoComplete="address-level1"
-                      {...register("state")}
-                    />
+                    {!locationLib ? (
+                      <Controller
+                        control={control}
+                        name="state"
+                        render={({ field }) => (
+                          <Select
+                            value={field.value || ""}
+                            onValueChange={handleStateChange}
+                            disabled
+                          >
+                            <SelectTrigger id="state" className={FIELD_CLASS}>
+                              <SelectValue placeholder="Select state" />
+                            </SelectTrigger>
+                            <SelectContent />
+                          </Select>
+                        )}
+                      />
+                    ) : statesOfCountry.length > 0 ? (
+                      <Controller
+                        control={control}
+                        name="state"
+                        render={({ field }) => (
+                          <Select
+                            value={field.value || ""}
+                            onValueChange={handleStateChange}
+                          >
+                            <SelectTrigger id="state" className={FIELD_CLASS}>
+                              <SelectValue placeholder="Select state" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {statesOfCountry.map((s) => (
+                                <SelectItem key={s.isoCode} value={s.name}>
+                                  {s.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    ) : (
+                      <Input
+                        id="state"
+                        className={FIELD_CLASS}
+                        placeholder="State"
+                        autoComplete="address-level1"
+                        {...register("state")}
+                      />
+                    )}
                     {errors.state && (
                       <p className="text-xs text-destructive">
                         {errors.state.message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    {!locationLib ? (
+                      <Controller
+                        control={control}
+                        name="city"
+                        render={({ field }) => (
+                          <Select
+                            value={field.value || ""}
+                            onValueChange={(v) =>
+                              setValue("city", v, { shouldValidate: true })
+                            }
+                            disabled
+                          >
+                            <SelectTrigger id="city" className={FIELD_CLASS}>
+                              <SelectValue placeholder="Select city" />
+                            </SelectTrigger>
+                            <SelectContent />
+                          </Select>
+                        )}
+                      />
+                    ) : citiesOfState.length > 0 ? (
+                      <Controller
+                        control={control}
+                        name="city"
+                        render={({ field }) => (
+                          <Select
+                            value={field.value || ""}
+                            onValueChange={(v) =>
+                              setValue("city", v, { shouldValidate: true })
+                            }
+                          >
+                            <SelectTrigger id="city" className={FIELD_CLASS}>
+                              <SelectValue placeholder="Select city" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {citiesOfState.map((c, i) => (
+                                <SelectItem
+                                  key={`${c.name}-${i}`}
+                                  value={c.name}
+                                >
+                                  {c.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    ) : (
+                      <Input
+                        id="city"
+                        className={FIELD_CLASS}
+                        placeholder="City"
+                        autoComplete="address-level2"
+                        {...register("city")}
+                      />
+                    )}
+                    {errors.city && (
+                      <p className="text-xs text-destructive">
+                        {errors.city.message}
                       </p>
                     )}
                   </div>
@@ -416,20 +669,6 @@ export default function CheckoutPage() {
                     {errors.zipCode && (
                       <p className="text-xs text-destructive">
                         {errors.zipCode.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
-                    <Input
-                      id="country"
-                      className={FIELD_CLASS}
-                      autoComplete="country-name"
-                      {...register("country")}
-                    />
-                    {errors.country && (
-                      <p className="text-xs text-destructive">
-                        {errors.country.message}
                       </p>
                     )}
                   </div>
@@ -553,14 +792,93 @@ export default function CheckoutPage() {
                       share the receipt screenshot with us so we can dispatch
                       quickly.
                     </p>
+                    <div className="rounded-xl border border-[#25D366]/40 bg-[#25D366]/[0.06] p-3">
+                      <p className="flex items-center gap-1.5 text-xs font-bold text-[#128C4B]">
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        Required: send payment screenshot on WhatsApp
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        After online payment, send your receipt screenshot on
+                        WhatsApp at{" "}
+                        <span className="font-bold text-foreground">
+                          {displayShopNumber}
+                        </span>{" "}
+                        so we can confirm and dispatch your order quickly.
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {whatsappHref && (
+                          <a
+                            href={whatsappHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#25D366] px-4 text-xs font-bold text-white transition-colors hover:bg-[#1da851]"
+                          >
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            Send on WhatsApp
+                          </a>
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-9 rounded-full text-xs"
+                          onClick={async () => {
+                            if (await copyText(displayShopNumber)) {
+                              setCopiedShopNumber(true);
+                              setTimeout(() => setCopiedShopNumber(false), 2000);
+                            }
+                          }}
+                        >
+                          {copiedShopNumber ? (
+                            <>
+                              <Check className="mr-1 h-3.5 w-3.5 text-emerald-600" />
+                              Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="mr-1 h-3.5 w-3.5" />
+                              Copy number
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                <p className="flex items-start gap-2 rounded-xl border border-brand-gold/25 bg-brand-gold/5 px-4 py-3 text-xs text-muted-foreground">
-                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-gold" />
-                  Our team confirms every order before it ships — you will
-                  receive your order code right after placing it.
-                </p>
+                {paymentMethod === PAYMENT_METHOD_BANK_DEPOSIT ? (
+                  <div className="flex items-start gap-2 rounded-xl border border-[#25D366]/40 bg-[#25D366]/[0.06] px-4 py-3 text-xs leading-relaxed">
+                    <MessageCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#128C4B]" />
+                    <p className="text-muted-foreground">
+                      <span className="font-bold text-[#128C4B]">
+                        Online payment ho jaye to WhatsApp par screenshot bhej
+                        dein:
+                      </span>{" "}
+                      <span className="font-bold text-foreground">
+                        {displayShopNumber}
+                      </span>
+                      {whatsappHref && (
+                        <>
+                          {" — "}
+                          <a
+                            href={whatsappHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-bold text-[#128C4B] underline underline-offset-2"
+                          >
+                            Send screenshot here
+                          </a>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="flex items-start gap-2 rounded-xl border border-brand-gold/25 bg-brand-gold/5 px-4 py-3 text-xs text-muted-foreground">
+                    <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-gold" />
+                    Our team confirms every order before it ships — you will
+                    receive your order code right after placing it.
+                  </p>
+                )}
               </div>
             </motion.div>
 

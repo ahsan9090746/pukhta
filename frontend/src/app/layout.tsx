@@ -13,6 +13,12 @@ import { getSiteUrl } from "@/lib/site-url";
 
 const inter = Inter({ subsets: ["latin"] });
 
+// Backend origin for early-connection hints (banner/product images live
+// there). Computed on the server so it works in every environment.
+const backendOrigin = (
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api"
+).replace(/\/api\/?$/, "");
+
 export const metadata: Metadata = {
   // Absolute base so relative canonical/OG URLs (e.g. "/blog") resolve to
   // full https URLs everywhere. Falls back to localhost in development.
@@ -67,6 +73,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Warm up the image/API origin before the hero banner requests it. */}
+        <link rel="preconnect" href={backendOrigin} />
+        <link rel="dns-prefetch" href={backendOrigin} />
+      </head>
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"

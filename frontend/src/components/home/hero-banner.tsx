@@ -221,6 +221,7 @@ export default function HeroBanner({ banners, loading }: HeroBannerProps) {
                   fill
                   sizes="100vw"
                   priority
+                  fetchPriority="high"
                   className="hidden object-cover object-center md:block"
                 />
               )}
@@ -231,6 +232,7 @@ export default function HeroBanner({ banners, loading }: HeroBannerProps) {
                   fill
                   sizes="100vw"
                   priority
+                  fetchPriority="high"
                   className="object-cover object-center md:hidden"
                 />
               )}

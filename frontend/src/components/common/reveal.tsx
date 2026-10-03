@@ -46,8 +46,8 @@ export function Reveal({
   children,
   direction = "up",
   delay = 0,
-  duration = 0.6,
-  distance = 28,
+  duration = 0.45,
+  distance = 20,
   amount = 0.2,
   once = true,
   className,
@@ -85,8 +85,8 @@ interface StaggerProps {
 /** Parent for `StaggerItem` — animates its children one after another. */
 export function Stagger({
   children,
-  stagger = 0.07,
-  delayChildren = 0.05,
+  stagger = 0.05,
+  delayChildren = 0.02,
   amount = 0.15,
   once = true,
   className,
@@ -118,8 +118,8 @@ export function Stagger({
 export function StaggerItem({
   children,
   direction = "up",
-  distance = 26,
-  duration = 0.55,
+  distance = 18,
+  duration = 0.45,
   className,
 }: {
   children: React.ReactNode;
@@ -150,7 +150,7 @@ export function StaggerItem({
 export function ParallaxFloat({
   children,
   className,
-  offset = 40,
+  offset = 28,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -166,7 +166,7 @@ export function ParallaxFloat({
       initial={{ y: offset, opacity: 0 }}
       whileInView={{ y: 0, opacity: 1 }}
       viewport={{ once: true, amount: 0.25 }}
-      transition={{ duration: 0.9, ease: EASE_OUT }}
+      transition={{ duration: 0.7, ease: EASE_OUT }}
     >
       {children}
     </motion.div>

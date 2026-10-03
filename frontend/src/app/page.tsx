@@ -2,12 +2,24 @@
 // Render on demand - skip static generation so a sleeping backend cannot crash the build.
 export const dynamic = "force-dynamic";
 
+import { default as nextDynamic } from "next/dynamic";
 import HeroBanner from "@/components/home/hero-banner";
 import CategoryGrid from "@/components/home/category-grid";
-import CategoryShowcase from "@/components/home/category-showcase";
-import CustomerReviews from "@/components/home/customer-reviews";
-import ShortsSection from "@/components/home/shorts-section";
 import SectionHeader from "@/components/home/section-header";
+// Below-fold sections stay server-rendered (same HTML/SEO) but ship as
+// separate JS chunks so the initial bundle stays small.
+const CategoryShowcase = nextDynamic(
+  () => import("@/components/home/category-showcase"),
+  { ssr: true }
+);
+const CustomerReviews = nextDynamic(
+  () => import("@/components/home/customer-reviews"),
+  { ssr: true }
+);
+const ShortsSection = nextDynamic(
+  () => import("@/components/home/shorts-section"),
+  { ssr: true }
+);
 import ProductCard from "@/components/product/product-card";
 import { Reveal, Stagger, StaggerItem } from "@/components/common/reveal";
 import { useQuery } from "@tanstack/react-query";
@@ -85,7 +97,7 @@ export default function HomePage() {
       {/* Trust & Craft Perks Strip — desktop only (hidden on mobile per design review) */}
       <section className="hidden border-b bg-background/60 py-6 backdrop-blur-sm md:block">
         <div className="container">
-          <Stagger className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6" stagger={0.08}>
+          <Stagger className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6" stagger={0.05}>
             {PERKS.map((perk) => {
               const Icon = perk.icon;
               return (
@@ -124,7 +136,7 @@ export default function HomePage() {
             ))}
           </div>
         ) : (
-          <Reveal delay={0.1}>
+          <Reveal delay={0.05}>
             <CategoryGrid categories={categories || []} />
           </Reveal>
         )}
@@ -167,7 +179,7 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              <Stagger className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6" stagger={0.06}>
+              <Stagger className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6" stagger={0.04}>
                 {(newArrivals || []).map((product: Product) => (
                   <StaggerItem key={product._id}>
                     <ProductCard product={product} />
@@ -176,7 +188,7 @@ export default function HomePage() {
               </Stagger>
 
               {/* View All Button */}
-              <Reveal delay={0.2} className="text-center mt-10">
+              <Reveal delay={0.08} className="text-center mt-10">
                 <Button
                   asChild
                   size="lg"

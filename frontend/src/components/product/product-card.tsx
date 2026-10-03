@@ -98,7 +98,7 @@ export default function ProductCard({
               </div>
               <div className="flex items-center gap-1.5">
                 <button onClick={openChooseOptions} disabled={outOfStock} className="h-8 px-3 rounded-md bg-brand-gold text-white text-xs font-semibold hover:bg-brand-gold-dark transition-colors disabled:opacity-40" title="Choose options">Options</button>
-                <button onClick={openQuickView} className="h-8 w-8 rounded-full border flex items-center justify-center text-muted-foreground hover:text-brand-gold hover:border-brand-gold transition-colors" title="Quick view">
+                <button onClick={openQuickView} aria-label="Quick view" className="h-8 w-8 rounded-full border flex items-center justify-center text-muted-foreground hover:text-brand-gold hover:border-brand-gold transition-colors" title="Quick view">
                   <Eye className="h-4 w-4" />
                 </button>
               </div>
@@ -145,10 +145,10 @@ export default function ProductCard({
           {/* Wishlist / quick view / plus — phones show the plus only (bottom-right),
               so this whole stack is tablet-and-up. */}
           <div className={cn("absolute top-2.5 right-2.5 z-10 hidden flex-col gap-1.5 transition-all duration-300 md:flex", hovered ? "opacity-100 translate-x-0" : "opacity-100 translate-x-0 md:opacity-0 md:translate-x-2")}>
-            <button onClick={handleWishlistClick} className="h-9 w-9 rounded-full bg-white text-neutral-900 shadow-lg ring-1 ring-black/10 flex items-center justify-center hover:bg-brand-gold hover:text-white dark:bg-neutral-900 dark:text-white dark:ring-white/20 dark:hover:bg-brand-gold dark:hover:text-white transition-colors" title="Wishlist">
+            <button onClick={handleWishlistClick} aria-label="Add to wishlist" className="h-9 w-9 rounded-full bg-white text-neutral-900 shadow-lg ring-1 ring-black/10 flex items-center justify-center hover:bg-brand-gold hover:text-white dark:bg-neutral-900 dark:text-white dark:ring-white/20 dark:hover:bg-brand-gold dark:hover:text-white transition-colors" title="Wishlist">
               <Heart className={cn("h-4 w-4", wishlisted && "fill-brand-gold text-brand-gold")} />
             </button>
-            <button onClick={openQuickView} className="h-9 w-9 rounded-full bg-white text-neutral-900 shadow-lg ring-1 ring-black/10 flex items-center justify-center hover:bg-brand-gold hover:text-white dark:bg-neutral-900 dark:text-white dark:ring-white/20 dark:hover:bg-brand-gold dark:hover:text-white transition-colors" title="Quick view">
+            <button onClick={openQuickView} aria-label="Quick view" className="h-9 w-9 rounded-full bg-white text-neutral-900 shadow-lg ring-1 ring-black/10 flex items-center justify-center hover:bg-brand-gold hover:text-white dark:bg-neutral-900 dark:text-white dark:ring-white/20 dark:hover:bg-brand-gold dark:hover:text-white transition-colors" title="Quick view">
               <Eye className="h-4 w-4" />
             </button>
             {/* Desktop/tablet only — on mobile the plus button sits bottom-right */}

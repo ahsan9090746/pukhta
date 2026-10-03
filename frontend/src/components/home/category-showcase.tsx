@@ -108,10 +108,10 @@ function CategoryCarousel({ category }: { category: Category }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       className="relative -mx-8 overflow-hidden rounded-none bg-brand-cream ring-0 shadow-none dark:bg-brand-dark md:mx-0 md:rounded-3xl md:ring-1 md:ring-brand-gold/25 md:shadow-premium-lg md:dark:ring-white/10"
     >
       {/* Decorative gold top edge */}
@@ -155,10 +155,10 @@ function CategoryCarousel({ category }: { category: Category }) {
 
         {/* Center — product count + category name */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.4 }}
           className="text-center"
         >
           <Link
@@ -218,7 +218,7 @@ function CategoryCarousel({ category }: { category: Category }) {
           <motion.div
             className="flex"
             animate={{ x: `-${index * step}%` }}
-            transition={{ type: "tween", duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ type: "tween", duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           >
             {items.map((product, i) => (
               <motion.div
@@ -226,7 +226,7 @@ function CategoryCarousel({ category }: { category: Category }) {
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-40px" }}
-                transition={{ delay: (i % perView) * 0.08, duration: 0.5 }}
+                transition={{ delay: (i % perView) * 0.05, duration: 0.4 }}
                 className="shrink-0 px-1.5 md:px-2"
                 style={{ width: `${step}%` }}
               >

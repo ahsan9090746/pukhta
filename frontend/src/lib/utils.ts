@@ -58,3 +58,18 @@ export function getImageUrl(path: string) {
   if (path.startsWith("/")) return `${backendBase}${path}`;
   return `${backendBase}/${path}`;
 }
+
+/**
+ * Logo URL that always loads from the SAME origin as the site
+ * (e.g. http://192.168.100.6:3000/uploads/... instead of :5001).
+ * next.config.js already rewrites /uploads/* to the backend, so the file
+ * still comes from the backend — but the browser never needs the backend
+ * address directly, which makes the logo load on any network/device.
+ * Empty path returns "" so the caller can fall back to the text wordmark.
+ */
+export function getLogoUrl(path: string) {
+  if (!path) return "";
+  if (path.startsWith("http")) return path;
+  if (path.startsWith("/uploads/")) return path;
+  return getImageUrl(path);
+}
