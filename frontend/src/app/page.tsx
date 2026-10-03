@@ -1,4 +1,6 @@
 "use client";
+// Render on demand - skip static generation so a sleeping backend cannot crash the build.
+export const dynamic = "force-dynamic";
 
 import HeroBanner from "@/components/home/hero-banner";
 import CategoryGrid from "@/components/home/category-grid";
