@@ -1,0 +1,31 @@
+﻿--BOUND
+Content-Disposition: form-data; name="name"
+
+TEST Variant Stock Product
+--BOUND
+Content-Disposition: form-data; name="slug"
+
+test-variant-stock-product
+--BOUND
+Content-Disposition: form-data; name="description"
+
+Testing variant-only stock with product level price.
+--BOUND
+Content-Disposition: form-data; name="price"
+
+2500
+--BOUND
+Content-Disposition: form-data; name="sku"
+
+TEST-VS-1
+--BOUND
+Content-Disposition: form-data; name="categoryId"
+
+6aaed3daaaee45b1cc7672ec
+--BOUND
+Content-Disposition: form-data; name="variants"
+
+[{"size":"41","stock":5,"sku":"TEST-VS-41"},{"size":"42","stock":3,"sku":"TEST-VS-42"}]
+--BOUND
+Content-Disposition: form-data; name="images"; filename="t.png"
+Content-Type: image/png

@@ -1,0 +1,308 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 8%;
+    --card: 40 20% 98%;
+    --card-foreground: 240 10% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 8%;
+    --primary: 40 39% 59%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 15% 95%;
+    --secondary-foreground: 40 39% 25%;
+    --muted: 40 10% 96%;
+    --muted-foreground: 40 8% 45%;
+    --accent: 40 39% 59%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 40 15% 90%;
+    --input: 40 15% 90%;
+    --ring: 40 39% 59%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 0 0% 5%;
+    --foreground: 40 15% 92%;
+    --card: 0 0% 8%;
+    --card-foreground: 40 15% 92%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 40 15% 92%;
+    --primary: 40 39% 59%;
+    --primary-foreground: 0 0% 5%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 40 20% 85%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 40 10% 55%;
+    --accent: 40 39% 59%;
+    --accent-foreground: 0 0% 5%;
+    --destructive: 0 62% 35%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 40 39% 59%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-feature-settings: "rlig" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(40 39% 59% / 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(40 39% 59% / 0.5);
+}
+
+/* Skeleton Animation */
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted) / 0.5) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+/* Shimmer Animation */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(191, 164, 111, 0.15) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Line Clamp */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Product Card Hover Effects */
+.product-card {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+.product-card:hover {
+  @apply shadow-premium-lg;
+}
+
+.product-card .product-image {
+  @apply transition-transform duration-500 ease-out;
+}
+
+.product-card:hover .product-image {
+  @apply scale-105;
+}
+
+/* Focus Styles */
+*:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+/* Swiper Custom Styles */
+.swiper-pagination-bullet-active {
+  @apply !bg-primary;
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Hero Banner Content Fade-In */
+@keyframes bannerContentFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.banner-content-fade {
+  animation: bannerContentFade 0.6s ease-out both;
+}
+.banner-delay-1 {
+  animation-delay: 0.15s;
+}
+.banner-delay-2 {
+  animation-delay: 0.3s;
+}
+
+/* Gold Gradient Utilities */
+.bg-gold-gradient {
+  background: linear-gradient(135deg, hsl(40 39% 59%) 0%, hsl(40 50% 45%) 100%);
+}
+
+.bg-gold-gradient-soft {
+  background: linear-gradient(135deg, hsl(40 39% 59% / 0.1) 0%, hsl(40 50% 45% / 0.05) 100%);
+}
+
+.text-gold-gradient {
+  background: linear-gradient(135deg, hsl(40 39% 59%) 0%, hsl(40 50% 45%) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gold Border Utility */
+.border-gold-gradient {
+  border-image: linear-gradient(135deg, hsl(40 39% 59%), hsl(40 50% 45%)) 1;
+}
+
+/* ---------------------------------------------------------------------------
+   Storefront motion utilities
+   All decorative motion is disabled automatically for visitors who ask for
+   reduced motion (accessibility) — see the media query at the bottom.
+   --------------------------------------------------------------------------- */
+
+/* Slow Ken Burns drift used by the hero artwork */
+@keyframes kenBurns {
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.08) translate3d(0, -1.2%, 0);
+  }
+}
+
+/* Soft gold shimmer that sweeps across highlighted cards */
+@keyframes goldSweep {
+  from {
+    background-position: -150% 0;
+  }
+  to {
+    background-position: 250% 0;
+  }
+}
+
+/* Gentle floating used by decorative badges */
+@keyframes floatSoft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Underline that draws itself in under section headings */
+@keyframes drawUnderline {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.ken-burns {
+  animation: kenBurns 9s ease-out both;
+}
+
+.gold-sweep {
+  background-image: linear-gradient(
+    100deg,
+    transparent 20%,
+    hsl(40 39% 59% / 0.22) 45%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: goldSweep 2.2s ease-in-out infinite;
+}
+
+.float-soft {
+  animation: floatSoft 6s ease-in-out infinite;
+}
+
+.draw-underline {
+  transform-origin: left center;
+  animation: drawUnderline 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Respect the visitor's motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .ken-burns,
+  .gold-sweep,
+  .float-soft,
+  .draw-underline,
+  .banner-content-fade {
+    animation: none !important;
+  }
+}
+
