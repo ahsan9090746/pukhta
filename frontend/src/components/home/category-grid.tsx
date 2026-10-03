@@ -105,7 +105,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
         <motion.div
           className="flex"
           animate={{ x: `-${index * step}%` }}
-          transition={{ type: "tween", duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ type: "tween", duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         >
           {items.map((category, i) => (
             <div
@@ -114,10 +114,10 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
               style={{ width: `${step}%` }}
             >
               <motion.div
-                initial={{ opacity: 0, y: 24 }}
+                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-40px" }}
-                transition={{ delay: (i % perView) * 0.08, duration: 0.5 }}
+                transition={{ delay: (i % perView) * 0.05, duration: 0.4 }}
               >
                 <Link
                   href={`/product-category/${category.slug}`}

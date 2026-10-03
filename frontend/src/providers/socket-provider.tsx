@@ -22,13 +22,9 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
     socketRef.current = socket;
 
-    socket.on("connect", () => {
-      console.log("Socket connected");
-    });
-
-    socket.on("disconnect", () => {
-      console.log("Socket disconnected");
-    });
+    // No console output on connect/disconnect — keeps the browser
+    // console clean (Lighthouse Best Practices penalizes console errors,
+    // and quiet logs keep real problems visible).
 
     return () => {
       socket.disconnect();

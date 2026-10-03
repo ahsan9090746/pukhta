@@ -98,6 +98,11 @@ export default function Header() {
   const logoDark =
     settings?.logoDark || settings?.storeLogo || settings?.logoLight || "";
   const hasLogo = Boolean(logoLight || logoDark);
+  // If the uploaded file ever fails to load (sleeping backend, stale cache…),
+  // fall back to the text wordmark instead of a broken-image icon.
+  const [logoFailed, setLogoFailed] = useState(false);
+  useEffect(() => setLogoFailed(false), [logoLight, logoDark]);
+  const showLogo = hasLogo && !logoFailed;
   const storeName = settings?.storeName || "PUKHTA";
   const [firstWord, ...otherWords] = storeName.split(" ");
   const restWords = otherWords.join(" ");
@@ -311,16 +316,21 @@ export default function Header() {
               href="/"
               className="absolute left-1/2 top-1/2 flex max-w-[48%] shrink-0 -translate-x-1/2 -translate-y-1/2 items-center md:static md:max-w-none md:translate-x-0 md:translate-y-0"
             >
-              {hasLogo ? (
+              {showLogo ? (
                 <>
                   <img
                     src={getImageUrl(logoLight || logoDark)}
                     alt={storeName}
+                    fetchPriority="high"
+                    decoding="async"
+                    onError={() => setLogoFailed(true)}
                     className="h-12 max-w-[190px] object-contain sm:h-14 lg:h-16 dark:hidden"
                   />
                   <img
                     src={getImageUrl(logoDark || logoLight)}
                     alt={storeName}
+                    decoding="async"
+                    onError={() => setLogoFailed(true)}
                     className="hidden h-12 max-w-[190px] object-contain sm:h-14 lg:h-16 dark:block"
                   />
                 </>

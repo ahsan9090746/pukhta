@@ -79,7 +79,19 @@ if (config.nodeEnv !== 'test') {
 }
 
 app.use('/api/', generalLimiter);
-app.use('/uploads', express.static(uploadsDir, { maxAge: '1d' }));
+// Uploads are public images/videos meant to be embedded cross-origin
+// (storefront on :3000 loads them from :5001). Helmet's default
+// `Cross-Origin-Resource-Policy: same-origin` would make browsers block
+// every logo/banner, so uploads explicitly allow cross-origin embedding.
+app.use(
+  '/uploads',
+  express.static(uploadsDir, {
+    maxAge: '1d',
+    setHeaders: (res) => {
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    },
+  })
+);
 app.use('/api', routes);
 app.set('io', io);
 app.use(notFound);

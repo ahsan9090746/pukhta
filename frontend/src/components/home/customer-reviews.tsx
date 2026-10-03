@@ -57,6 +57,8 @@ function ReviewerAvatar({ name, avatar }: { name: string; avatar?: string }) {
       <img
         src={src}
         alt={name}
+        loading="lazy"
+        decoding="async"
         className="h-8 w-8 shrink-0 rounded-full object-cover ring-2 ring-brand-gold/40 sm:h-10 sm:w-10"
       />
     );
@@ -190,10 +192,10 @@ export default function CustomerReviews() {
       <div className="container">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-40px" }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           className="text-center mb-6 sm:mb-10"
         >
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -302,10 +304,10 @@ export default function CustomerReviews() {
                 {realReviews.map((review, i) => (
                   <motion.div
                     key={review._id}
-                    initial={{ opacity: 0, y: 24 }}
+                    initial={{ opacity: 0, y: 16 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-40px" }}
-                    transition={{ duration: 0.5, delay: (i % 3) * 0.08 }}
+                    transition={{ duration: 0.4, delay: (i % 3) * 0.05 }}
                   >
                     <ReviewCard review={review} className="h-full" />
                   </motion.div>

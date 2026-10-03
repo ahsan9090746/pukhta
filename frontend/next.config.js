@@ -38,6 +38,25 @@ const nextConfig = {
         hostname: '127.0.0.1',
         port: '5001',
       },
+      // LAN dev access (e.g. http://192.168.100.6:3000 with API at :5001).
+      // Exact host fixes today's error; wildcards survive DHCP IP changes.
+      {
+        protocol: 'http',
+        hostname: '192.168.100.6',
+        port: '5001',
+      },
+      {
+        protocol: 'http',
+        hostname: '192.168.*.*',
+      },
+      {
+        protocol: 'http',
+        hostname: '10.*.*.*',
+      },
+      {
+        protocol: 'http',
+        hostname: '172.*.*.*',
+      },
     ],
   },
   async redirects() {
@@ -67,6 +86,15 @@ const nextConfig = {
   transpilePackages: ['framer-motion', '@tanstack/react-query', 'recharts', 'swiper'],
   experimental: {
     forceSwcTransforms: false,
+    // Tree-shake the big icon/animation/query barrels so the homepage
+    // downloads only what it renders. No visual or behavior change.
+    optimizePackageImports: [
+      'lucide-react',
+      'framer-motion',
+      '@tanstack/react-query',
+      'date-fns',
+      'recharts',
+    ],
   },
 };
 

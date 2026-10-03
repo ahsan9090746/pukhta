@@ -20,13 +20,7 @@ export function useSocket() {
 
     socketRef.current = socket;
 
-    socket.on("connect", () => {
-      console.log("Socket connected");
-    });
-
-    socket.on("disconnect", () => {
-      console.log("Socket disconnected");
-    });
+    // Connection chatter stays out of the console (see SocketProvider note).
 
     return () => {
       socket.disconnect();

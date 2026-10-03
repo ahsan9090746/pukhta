@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
@@ -37,6 +38,10 @@ export default function Footer() {
   const logoLight = settings?.logoLight || settings?.storeLogo || settings?.logoDark || "";
   const logoDark = settings?.logoDark || settings?.storeLogo || settings?.logoLight || "";
   const hasLogo = Boolean(logoLight && logoDark);
+  // Same broken-image guard as the header — failed file falls back to text.
+  const [logoFailed, setLogoFailed] = useState(false);
+  useEffect(() => setLogoFailed(false), [logoLight, logoDark]);
+  const showLogo = hasLogo && !logoFailed;
 
   const features = [
     { icon: Truck, title: "Free Shipping", desc: "On every order — always free" },
@@ -73,17 +78,23 @@ export default function Footer() {
           {/* Brand Column */}
           <div className="col-span-2 md:col-span-1 lg:col-span-4">
             <Link href="/" className="inline-block mb-4 md:mb-6">
-              {hasLogo ? (
+              {showLogo ? (
                 <>
                   {/* Light-mode logo (footer is light there) + dark-mode logo */}
                   <img
                     src={getImageUrl(logoLight)}
                     alt={storeName}
+                    loading="lazy"
+                    decoding="async"
+                    onError={() => setLogoFailed(true)}
                     className="h-9 max-w-[140px] object-contain md:h-12 md:max-w-[160px] dark:hidden"
                   />
                   <img
                     src={getImageUrl(logoDark)}
                     alt={storeName}
+                    loading="lazy"
+                    decoding="async"
+                    onError={() => setLogoFailed(true)}
                     className="hidden h-9 max-w-[140px] object-contain md:h-12 md:max-w-[160px] dark:block"
                   />
                 </>
