@@ -37,6 +37,9 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 const app = express();
+// Trust the hosting proxy (Render) so express-rate-limit reads the real
+// client IP from X-Forwarded-For instead of throwing a ValidationError.
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 const io = initializeSocket(server);
